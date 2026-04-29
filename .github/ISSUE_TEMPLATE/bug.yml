@@ -1,0 +1,34 @@
+name: Bug report
+description: Report behavior that is incorrect, unsafe, or confusing.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: "Thanks for helping improve AgentFanout. Do not include secrets, credentials, or private infrastructure details."
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What happened?
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What did you expect AgentFanout to do?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: Minimal prompt, command, fixture, or route output that demonstrates the issue.
+      render: text
+  - type: textarea
+    id: verification
+    attributes:
+      label: Verification
+      description: Commands run, logs, or evidence.
+      render: text

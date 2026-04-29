@@ -1,0 +1,35 @@
+name: Feature request
+description: Propose a new routing, adapter, validation, or documentation capability.
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What workflow or gap should this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: What should AgentFanout add or change?
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Routing
+        - Worker capsules
+        - Provider adapter
+        - Validation
+        - Documentation
+        - Future harness
+  - type: textarea
+    id: safety
+    attributes:
+      label: Safety considerations
+      description: Does this touch MCP/private tools, secrets, git state, destructive actions, callbacks, or final synthesis?

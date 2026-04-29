@@ -1,16 +1,47 @@
 # AgentFanout
 
-AgentFanout is a provider-agnostic orchestration skill and policy layer for useful parallel agent work. It keeps the main session in charge of safety, private tools, git state, destructive actions, and final synthesis while allowing host runtimes to use bounded workers and validators when fanout is worth the overhead.
+[![CI](https://github.com/SynapseGrid-Labs/AgentFanout/actions/workflows/ci.yml/badge.svg)](https://github.com/SynapseGrid-Labs/AgentFanout/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/SynapseGrid-Labs/AgentFanout?include_prereleases)](https://github.com/SynapseGrid-Labs/AgentFanout/releases)
+[![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12-blue.svg)](.github/workflows/ci.yml)
+[![Security Policy](https://img.shields.io/badge/security-policy-green.svg)](SECURITY.md)
+
+AgentFanout is a provider-agnostic orchestration skill and advisory router for safe multi-agent work. It keeps the main session in charge of safety, private tools, git state, destructive actions, and final synthesis while allowing host runtimes to use bounded workers and validators when fanout is worth the overhead.
 
 ![AgentFanout orchestration architecture](assets/readme/agentfanout-orchestrator.jpg)
 
 The diagrams show the intended orchestration flow. Worker launch is performed by the host runtime; AgentFanout provides routing policy, task packets, safety gates, and validation rules.
+
+## Current Status
+
+AgentFanout is `v0.1.0`. It is a portable skill/policy layer and deterministic advisory router, not a standalone dispatch harness. It is designed to be embedded into agent runtimes that already have a worker mechanism, such as Codex subagents, Claude agents, MiniMax wrappers, local LLM runners, or future provider adapters.
+
+## Table of Contents
+
+- [Execution Model](#execution-model)
+- [Who This Is For](#who-this-is-for)
+- [What It Does](#what-it-does)
+- [What This Is Not](#what-this-is-not)
+- [Quickstart](#quickstart)
+- [Deterministic Router](#deterministic-router)
+- [Safety Model](#safety-model)
+- [FAQ](#faq)
 
 ## Execution Model
 
 - **Skill Mode:** The host agent uses AgentFanout instructions to decompose, delegate, validate, and integrate work.
 - **Router Mode:** `scripts/route.py` returns advisory JSON and sanitization output. It does not launch workers.
 - **Harness Mode:** A standalone dispatcher is possible future infrastructure. It is not currently shipped.
+
+## Who This Is For
+
+AgentFanout is for people building or operating agent workflows that need:
+
+- bounded fanout across coding, review, research, validation, or extraction tasks
+- strict separation between the main session and worker prompts
+- provider-agnostic routing across current and future agent runtimes
+- small worker packets that reduce main-session context growth
+- explicit safety gates for secrets, private tools, git state, destructive actions, and final synthesis
 
 ## What It Does
 
@@ -21,11 +52,85 @@ The diagrams show the intended orchestration flow. Worker launch is performed by
 - Sanitizes delegated prompts so voice, callback, webhook, and notification behavior cannot leak into workers.
 - Treats legacy `AgentOrchestrator` and `OrchestratorMode` phrases as compatibility hints, not global policy.
 
+## What This Is Not
+
+AgentFanout does not currently provide:
+
+- a standalone worker dispatcher
+- subprocess orchestration
+- concurrency caps
+- endpoint probing or API-key validation
+- worker timeout/cancellation management
+- result collection from external runtimes
+
+Those capabilities belong in a future optional harness or in the host runtime.
+
 ## Why It Helps
 
 ![AgentFanout before and after context comparison](assets/readme/agentfanout-before-after.jpg)
 
 AgentFanout keeps the main session's context focused by shaping small, bounded worker packets. When the host runtime supports worker execution, it sends those packets to workers; the main session receives evidence and validated results back, then performs the final integration.
+
+## Quickstart
+
+Copy this repository into your runtime skill root:
+
+```bash
+mkdir -p "${PAI_DIR:-$HOME/.pai}/skills"
+cp -R AgentFanout "${PAI_DIR:-$HOME/.pai}/skills/AgentFanout"
+```
+
+If your runtime supports a skill registry, regenerate it after copying the skill.
+
+Run the advisory router directly:
+
+```bash
+python3 scripts/route.py "review twenty independent modules"
+python3 scripts/route.py "AgentFanout Status"
+python3 scripts/route.py --sanitize "prompt text"
+```
+
+## Deterministic Router
+
+`scripts/route.py` classifies a request, checks hard gates, selects a provider preference, estimates useful fanout, returns a worker capsule, and reports validator requirements.
+
+Example output shape:
+
+```json
+{
+  "route": {
+    "task_class": "bulk-read",
+    "worth_delegating": true,
+    "parallelism": "parallel",
+    "executor": {
+      "role": "explorer",
+      "provider": "MiniMax",
+      "model_selector": "minimax-fast",
+      "reasoning_effort": "low"
+    }
+  },
+  "fanout": {
+    "policy": "automatic_guarded",
+    "planned_workers": 20
+  },
+  "validator": {
+    "required": true
+  }
+}
+```
+
+Provider readiness is environment-driven:
+
+```bash
+AGENT_FANOUT_MINIMAX_AVAILABLE=1
+AGENT_FANOUT_LOCAL_AVAILABLE=1
+AGENT_FANOUT_CODEX_SUBAGENTS=1
+AGENT_FANOUT_CLAUDE_AVAILABLE=1
+```
+
+The router also checks `$PAI_DIR/skills/MiniMax/Tools/MiniMaxExec.ts` or `$PAI_HOME/skills/MiniMax/Tools/MiniMaxExec.ts` for MiniMax readiness, falling back to `~/.pai/skills/...`.
+
+Readiness flags and file checks are routing hints. They do not perform live endpoint probing, key validation, or health checks.
 
 ## Safety Model
 
@@ -55,40 +160,6 @@ Only exact full-line `AgentFanout ...` commands mutate session state:
 - `AgentFanout Reset`
 
 Fanout size is automatic. AgentFanout estimates independent work units, provider readiness, validation overhead, write-scope conflicts, and hard gates.
-
-## Install
-
-Copy this repository into your runtime skill root:
-
-```bash
-mkdir -p "${PAI_DIR:-$HOME/.pai}/skills"
-cp -R AgentFanout "${PAI_DIR:-$HOME/.pai}/skills/AgentFanout"
-```
-
-If your runtime supports a skill registry, regenerate it after copying the skill.
-
-## Deterministic Router
-
-Run the advisory router directly:
-
-```bash
-python3 scripts/route.py "review twenty independent modules"
-python3 scripts/route.py "AgentFanout Status"
-python3 scripts/route.py --sanitize "prompt text"
-```
-
-Provider readiness is environment-driven:
-
-```bash
-AGENT_FANOUT_MINIMAX_AVAILABLE=1
-AGENT_FANOUT_LOCAL_AVAILABLE=1
-AGENT_FANOUT_CODEX_SUBAGENTS=1
-AGENT_FANOUT_CLAUDE_AVAILABLE=1
-```
-
-The router also checks `$PAI_DIR/skills/MiniMax/Tools/MiniMaxExec.ts` or `$PAI_HOME/skills/MiniMax/Tools/MiniMaxExec.ts` for MiniMax readiness, falling back to `~/.pai/skills/...`.
-
-Readiness flags and file checks are routing hints. They do not perform live endpoint probing, key validation, or health checks.
 
 ## Tests
 
@@ -158,6 +229,6 @@ Possibly. A future optional harness could add provider probes, key and endpoint 
 
 </details>
 
-## Author
+## Maintainer
 
-Created and maintained by [Trent Doney](https://github.com/trentdoney) at [SynapseGrid Labs](https://github.com/SynapseGrid-Labs).
+[![Maintained by Trent Doney at SynapseGrid Labs](assets/readme/github-maintained-by-trent.jpg)](https://github.com/trentdoney)

@@ -1,0 +1,9 @@
+cff-version: 1.2.0
+message: "If AgentFanout helps your work, please cite it using this metadata."
+title: "AgentFanout"
+version: "0.1.0"
+date-released: "2026-04-29"
+url: "https://github.com/SynapseGrid-Labs/AgentFanout"
+authors:
+  - family-names: "Doney"
+    given-names: "Trent"
