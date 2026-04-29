@@ -65,6 +65,19 @@ MCP_CUES = [
     "workspace tool", "mcp",
 ]
 SECRET_CUES = ["secret", "api key", "token", "credential", "password", "private key"]
+SECRET_PATTERNS = [
+    re.compile(r"\bsk-[A-Za-z0-9_-]{20,}\b"),
+    re.compile(r"\bghp_[A-Za-z0-9_]{20,}\b"),
+    re.compile(r"\bgithub_pat_[A-Za-z0-9_]{20,}\b"),
+    re.compile(r"\bAKIA[0-9A-Z]{16}\b"),
+    re.compile(r"\bAuthorization\s*:\s*Bearer\s+[A-Za-z0-9._~+/=-]{20,}", re.IGNORECASE),
+    re.compile(r"\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\b"),
+    re.compile(r"\bxox[baprs]-[A-Za-z0-9-]{20,}\b"),
+    re.compile(r"\bAIza[0-9A-Za-z_-]{20,}\b"),
+    re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY-----"),
+    re.compile(r"\b[a-z][a-z0-9+.-]*://[^/\s:@]+:[^@\s/]+@[^ \t\r\n]+", re.IGNORECASE),
+    re.compile(r"\b[A-Z0-9_]*(?:SECRET|TOKEN|PASSWORD|CREDENTIAL|PRIVATE_KEY|API_KEY|ACCESS_KEY)[A-Z0-9_]*\s*=\s*[^\s'\"]{8,}\b"),
+]
 GIT_STATE_CUES = ["commit", "rebase", "cherry-pick", "reset --hard", "force push", "tag release", "create branch"]
 GIT_READ_CUES = ["diff", "git log", "blame"]
 DESTRUCTIVE_CUES = ["delete", "wipe", "drop table", "truncate", "destroy", "production deploy", "irreversible"]
@@ -87,6 +100,10 @@ SAFE_DELEGATED_INSTRUCTION = (
 def contains_any(text: str, cues: list[str]) -> bool:
     lowered = text.lower()
     return any(cue in lowered for cue in cues)
+
+
+def looks_like_secret(text: str) -> bool:
+    return contains_any(text, SECRET_CUES) or any(pattern.search(text) for pattern in SECRET_PATTERNS)
 
 
 def canonical_provider(value: str) -> str:
@@ -279,7 +296,7 @@ def requested_provider(prompt: str) -> tuple[str | None, list[str]]:
 def hard_gates(prompt: str, task_class: str) -> dict[str, bool]:
     return {
         "requires_mcp_private_tools": task_class == "mcp-inline",
-        "requires_secrets": contains_any(prompt, SECRET_CUES),
+        "requires_secrets": looks_like_secret(prompt),
         "requires_git_state_change": contains_any(prompt, GIT_STATE_CUES),
         "requires_destructive_action": contains_any(prompt, DESTRUCTIVE_CUES),
         "requires_final_synthesis": True,

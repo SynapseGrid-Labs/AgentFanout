@@ -26,7 +26,7 @@ A constraint gate overrides provider preference.
 | Gate | Detection cues | Route |
 |---|---|---|
 | MCP/private tools | account tools, private memory, email, calendar, chat, browser automation, workspace tools, private search | Main session only |
-| Secrets | keys, tokens, credentials, private key, password, customer private data | Main session only; redact before any delegation |
+| Secrets | secret words plus credential-shaped syntax such as API keys, bearer headers, JWT-like values, access-key env vars, private key blocks, and password-bearing DSNs | Main session only; redact before any delegation |
 | Git state | commit, rebase, cherry-pick, reset, tag, branch mutation | Main session only |
 | Destructive | delete, wipe, drop, truncate, force-push, production deploy, irreversible migration | Main session only unless user explicitly authorizes and tool policy allows |
 | Tiny task | one-line edit, simple answer, no parallel substructure | Main session only |

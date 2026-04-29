@@ -171,6 +171,136 @@
     }
   },
   {
+    "name": "openai style secret stays main session",
+    "prompt": "debug failing auth with sk-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "state_json": {"provider_mode": "MiniMax", "effort_mode": "Auto", "fanout_policy": "automatic_guarded", "state_scope": "conversation_only"},
+    "expect": {
+      "hard_gates.requires_secrets": true,
+      "route.worth_delegating": false,
+      "selected_provider": "main-session",
+      "fanout.planned_workers": 0
+    }
+  },
+  {
+    "name": "aws access key assignment stays main session",
+    "prompt": "debug auth failure AWS_ACCESS_KEY_ID=AKIA1234567890ABCDEF",
+    "state_json": {"provider_mode": "MiniMax", "effort_mode": "Auto", "fanout_policy": "automatic_guarded", "state_scope": "conversation_only"},
+    "expect": {
+      "hard_gates.requires_secrets": true,
+      "route.worth_delegating": false,
+      "selected_provider": "main-session",
+      "fanout.planned_workers": 0
+    }
+  },
+  {
+    "name": "bearer header stays main session",
+    "prompt": "debug failing auth Authorization: Bearer abcdefghijklmnopqrstuvwxyz123456",
+    "state_json": {"provider_mode": "MiniMax", "effort_mode": "Auto", "fanout_policy": "automatic_guarded", "state_scope": "conversation_only"},
+    "expect": {
+      "hard_gates.requires_secrets": true,
+      "route.worth_delegating": false,
+      "selected_provider": "main-session",
+      "fanout.planned_workers": 0
+    }
+  },
+  {
+    "name": "jwt shaped value stays main session",
+    "prompt": "debug failing auth eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.aaaaaaaaaaaaaaaaaaaa.bbbbbbbbbbbbbbbbbbbb",
+    "state_json": {"provider_mode": "MiniMax", "effort_mode": "Auto", "fanout_policy": "automatic_guarded", "state_scope": "conversation_only"},
+    "expect": {
+      "hard_gates.requires_secrets": true,
+      "route.worth_delegating": false,
+      "selected_provider": "main-session",
+      "fanout.planned_workers": 0
+    }
+  },
+  {
+    "name": "github classic token shaped value stays main session",
+    "prompt": "debug failing auth ghp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "state_json": {"provider_mode": "MiniMax", "effort_mode": "Auto", "fanout_policy": "automatic_guarded", "state_scope": "conversation_only"},
+    "expect": {
+      "hard_gates.requires_secrets": true,
+      "route.worth_delegating": false,
+      "selected_provider": "main-session",
+      "fanout.planned_workers": 0
+    }
+  },
+  {
+    "name": "github fine grained token shaped value stays main session",
+    "prompt": "debug failing auth github_pat_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "state_json": {"provider_mode": "MiniMax", "effort_mode": "Auto", "fanout_policy": "automatic_guarded", "state_scope": "conversation_only"},
+    "expect": {
+      "hard_gates.requires_secrets": true,
+      "route.worth_delegating": false,
+      "selected_provider": "main-session",
+      "fanout.planned_workers": 0
+    }
+  },
+  {
+    "name": "slack token shaped value stays main session",
+    "prompt": "debug failing auth xoxb-aaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "state_json": {"provider_mode": "MiniMax", "effort_mode": "Auto", "fanout_policy": "automatic_guarded", "state_scope": "conversation_only"},
+    "expect": {
+      "hard_gates.requires_secrets": true,
+      "route.worth_delegating": false,
+      "selected_provider": "main-session",
+      "fanout.planned_workers": 0
+    }
+  },
+  {
+    "name": "google api key shaped value stays main session",
+    "prompt": "debug failing auth AIzaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "state_json": {"provider_mode": "MiniMax", "effort_mode": "Auto", "fanout_policy": "automatic_guarded", "state_scope": "conversation_only"},
+    "expect": {
+      "hard_gates.requires_secrets": true,
+      "route.worth_delegating": false,
+      "selected_provider": "main-session",
+      "fanout.planned_workers": 0
+    }
+  },
+  {
+    "name": "inline dsn with password stays main session",
+    "prompt": "debug failing auth postgres://user:notarealpassword123@example.invalid/db",
+    "state_json": {"provider_mode": "MiniMax", "effort_mode": "Auto", "fanout_policy": "automatic_guarded", "state_scope": "conversation_only"},
+    "expect": {
+      "hard_gates.requires_secrets": true,
+      "route.worth_delegating": false,
+      "selected_provider": "main-session",
+      "fanout.planned_workers": 0
+    }
+  },
+  {
+    "name": "password env assignment stays main session",
+    "prompt": "debug failing auth DATABASE_PASSWORD=notarealpassword123",
+    "state_json": {"provider_mode": "MiniMax", "effort_mode": "Auto", "fanout_policy": "automatic_guarded", "state_scope": "conversation_only"},
+    "expect": {
+      "hard_gates.requires_secrets": true,
+      "route.worth_delegating": false,
+      "selected_provider": "main-session",
+      "fanout.planned_workers": 0
+    }
+  },
+  {
+    "name": "disk wording is not secret gated",
+    "prompt": "debug disk space issue in worker logs",
+    "state_json": {"provider_mode": "MiniMax", "effort_mode": "Auto", "fanout_policy": "automatic_guarded", "state_scope": "conversation_only"},
+    "expect": {
+      "hard_gates.requires_secrets": false,
+      "route.worth_delegating": true,
+      "selected_provider": "MiniMax"
+    }
+  },
+  {
+    "name": "skip list wording is not secret gated",
+    "prompt": "review skip-list implementation for routing",
+    "state_json": {"provider_mode": "MiniMax", "effort_mode": "Auto", "fanout_policy": "automatic_guarded", "state_scope": "conversation_only"},
+    "expect": {
+      "hard_gates.requires_secrets": false,
+      "route.worth_delegating": false,
+      "selected_provider": "main-session"
+    }
+  },
+  {
     "name": "clear approval executes pending plan",
     "prompt": "implement it",
     "pending_plan": true,

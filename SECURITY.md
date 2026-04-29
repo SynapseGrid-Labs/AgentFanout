@@ -16,4 +16,4 @@ Open a private security advisory on GitHub if available. If advisories are unava
 
 ## Design Commitments
 
-AgentFanout is designed so the main session remains the security boundary. Workers and validators should receive only bounded task packets, no private account tools, no secrets, no automatic memory, no git-state authority, and no final synthesis authority.
+AgentFanout is designed so the main session remains the security boundary. Workers and validators should receive only bounded task packets, no private account tools, no secrets, no automatic memory, no git-state authority, and no final synthesis authority. Secret hard gates include explicit secret wording and common credential-shaped syntax such as bearer headers, API-key prefixes, access-key assignments, JWT-like values, private key blocks, and password-bearing DSNs.
