@@ -2,6 +2,8 @@
 
 AgentFanout is a provider-agnostic orchestration skill for useful parallel agent work. It keeps the main session in charge of safety, private tools, git state, destructive actions, and final synthesis while allowing bounded workers and validators when fanout is worth the overhead.
 
+![AgentFanout orchestration architecture](assets/readme/agentfanout-orchestrator.jpg)
+
 ## What It Does
 
 - Routes work between the main session, Codex, Claude, MiniMax, local LLMs, or future providers.
@@ -10,6 +12,12 @@ AgentFanout is a provider-agnostic orchestration skill for useful parallel agent
 - Loads richer agent/persona context only when the request actually needs it.
 - Sanitizes delegated prompts so voice, callback, webhook, and notification behavior cannot leak into workers.
 - Treats legacy `AgentOrchestrator` and `OrchestratorMode` phrases as compatibility hints, not global policy.
+
+## Why It Helps
+
+![AgentFanout before and after context comparison](assets/readme/agentfanout-before-after.jpg)
+
+AgentFanout keeps the main session's context focused by sending independent work to small, bounded worker prompts. The main session receives evidence and validated results back, then performs the final integration.
 
 ## Safety Model
 
