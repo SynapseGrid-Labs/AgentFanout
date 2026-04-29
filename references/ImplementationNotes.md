@@ -4,6 +4,8 @@
 
 Use one lazy `AgentFanout` skill as the execution policy for useful delegation and fanout.
 
+AgentFanout is a skill and policy layer with an advisory router. It is not a standalone worker dispatcher, and `scripts/route.py` does not launch workers, manage queues, enforce timeouts, or collect worker results.
+
 AgentFanout combines:
 
 - Orchestration routing concepts: provider preferences, local-first routing, hard gates, and validators.
@@ -27,6 +29,8 @@ Auto mode tries the cheapest capable provider chain for the task instead of stop
 
 Runtime readiness flags use the `AGENT_FANOUT_*` prefix. Legacy `AGENT_ORCH_*` flags are tolerated only for compatibility.
 
+Readiness flags and file checks are routing hints only. They do not perform live endpoint probing, API-key validation, provider health checks, or dependency verification.
+
 ## Compatibility Decision
 
 - `AgentOrchestrator` is a compatibility trigger and redirects to AgentFanout where a host runtime provides that wrapper.
@@ -45,6 +49,10 @@ If AgentFanout created a plan and the next user message clearly approves it, exe
 - Local readiness: `AGENT_FANOUT_LOCAL_AVAILABLE=1`.
 - Codex readiness: Codex runtime environment variables or `AGENT_FANOUT_CODEX_SUBAGENTS=1`.
 - Claude readiness: `AGENT_FANOUT_CLAUDE_AVAILABLE=1`.
+
+## Future Harness Roadmap
+
+A future optional dispatcher layer may add provider probes, key/endpoint checks, concurrency caps, timeouts, retries, cancellation, and normalized result capture. These capabilities are out of scope for the current skill/router implementation.
 
 ## Verification
 

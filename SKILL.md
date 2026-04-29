@@ -1,11 +1,11 @@
 ---
 name: AgentFanout
-description: AgentFanout is the lazy provider-agnostic execution layer for useful agent fanout. USE WHEN launch parallel agents, use AgentFanout, AgentOrchestrator, OrchestratorMode, delegate this, delegate work, spin up workers, worker agents, run validators, cheapest capable model, local-first execution, MiniMax workers, Codex subagents, Claude agents, local LLM workers, multi-agent review, fan out subtasks, specialist agents, coding agents, custom agents, provider-agnostic orchestration, cost-aware runtime routing. This skill decomposes work, shapes minimal specialist worker capsules, routes to capable providers, keeps MCP/secrets/git/destructive actions/final integration in the main session, validates worker outputs, and synthesizes the final result.
+description: AgentFanout is the lazy provider-agnostic skill and policy layer for useful agent fanout. USE WHEN launch parallel agents, use AgentFanout, AgentOrchestrator, OrchestratorMode, delegate this, delegate work, spin up workers, worker agents, run validators, cheapest capable model, local-first execution, MiniMax workers, Codex subagents, Claude agents, local LLM workers, multi-agent review, fan out subtasks, specialist agents, coding agents, custom agents, provider-agnostic orchestration, cost-aware runtime routing. This skill decomposes work, shapes minimal specialist worker capsules, routes to capable providers, keeps MCP/secrets/git/destructive actions/final integration in the main session, validates worker outputs, and synthesizes the final result through the host runtime.
 ---
 
 # AgentFanout
 
-AgentFanout is the lazy execution layer for parallel agents, delegated workers, validators, specialist worker capsules, local-first execution, and cost-aware provider routing.
+AgentFanout is the lazy skill and policy layer for parallel agents, delegated workers, validators, specialist worker capsules, local-first execution, and cost-aware provider routing.
 
 AgentFanout is not injected into session startup. It loads through compact skill routing only when orchestration is useful.
 
@@ -13,7 +13,7 @@ AgentFanout is not injected into session startup. It loads through compact skill
 
 The main session remains the orchestrator, security boundary, and final integrator.
 
-It may launch bounded helpers, but it must keep these responsibilities in the main session:
+It may use host-runtime worker mechanisms for bounded helpers when available, but it must keep these responsibilities in the main session:
 
 - MCP/tool work: memory, calendar, email, chat, browser automation, workspace tools, private search, or any other private/tool-backed system.
 - Secrets, credentials, private keys, tokens, customer-private data, and provider-sensitive material.

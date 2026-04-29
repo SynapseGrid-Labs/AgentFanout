@@ -43,6 +43,8 @@ Before delegation:
 4. Add the subagent-safe wording.
 5. Verify the delegated prompt no longer contains forbidden raw tokens.
 
+Strict `curl` stripping applies to delegated worker prompts. Authenticated, secret-bearing, callback, or side-effectful `curl` commands must stay in the main orchestrator session and must not be injected into workers.
+
 After receiving output:
 
 1. Check output for forbidden tokens/patterns.

@@ -1,8 +1,16 @@
 # AgentFanout
 
-AgentFanout is a provider-agnostic orchestration skill for useful parallel agent work. It keeps the main session in charge of safety, private tools, git state, destructive actions, and final synthesis while allowing bounded workers and validators when fanout is worth the overhead.
+AgentFanout is a provider-agnostic orchestration skill and policy layer for useful parallel agent work. It keeps the main session in charge of safety, private tools, git state, destructive actions, and final synthesis while allowing host runtimes to use bounded workers and validators when fanout is worth the overhead.
 
 ![AgentFanout orchestration architecture](assets/readme/agentfanout-orchestrator.jpg)
+
+The diagrams show the intended orchestration flow. Worker launch is performed by the host runtime; AgentFanout provides routing policy, task packets, safety gates, and validation rules.
+
+## Execution Model
+
+- **Skill Mode:** The host agent uses AgentFanout instructions to decompose, delegate, validate, and integrate work.
+- **Router Mode:** `scripts/route.py` returns advisory JSON and sanitization output. It does not launch workers.
+- **Harness Mode:** A standalone dispatcher is possible future infrastructure. It is not currently shipped.
 
 ## What It Does
 
@@ -17,7 +25,7 @@ AgentFanout is a provider-agnostic orchestration skill for useful parallel agent
 
 ![AgentFanout before and after context comparison](assets/readme/agentfanout-before-after.jpg)
 
-AgentFanout keeps the main session's context focused by sending independent work to small, bounded worker prompts. The main session receives evidence and validated results back, then performs the final integration.
+AgentFanout keeps the main session's context focused by shaping small, bounded worker packets. When the host runtime supports worker execution, it sends those packets to workers; the main session receives evidence and validated results back, then performs the final integration.
 
 ## Safety Model
 
@@ -80,6 +88,8 @@ AGENT_FANOUT_CLAUDE_AVAILABLE=1
 
 The router also checks `$PAI_DIR/skills/MiniMax/Tools/MiniMaxExec.ts` or `$PAI_HOME/skills/MiniMax/Tools/MiniMaxExec.ts` for MiniMax readiness, falling back to `~/.pai/skills/...`.
 
+Readiness flags and file checks are routing hints. They do not perform live endpoint probing, key validation, or health checks.
+
 ## Tests
 
 ```bash
@@ -96,3 +106,58 @@ scripts/github-preflight.sh
 - `adapters/`: provider-specific adapter contracts
 - `workflows/`: activation, routing, and validation workflows
 - `tests/`: fixture-based router tests
+
+## FAQ
+
+<details>
+<summary>Is AgentFanout a standalone orchestrator?</summary>
+
+No. AgentFanout is a portable skill and policy layer. It provides advisory routing via `scripts/route.py` and integration instructions for host runtimes, but it does not launch workers or manage dispatch queues.
+
+</details>
+
+<details>
+<summary>Is this just regex routing?</summary>
+
+No. `scripts/route.py` uses deterministic cues and regexes as one input, then applies task classification, hard safety gates, provider selection, worker capsule shaping, and validation policy. It returns an advisory route; the host runtime executes it.
+
+</details>
+
+<details>
+<summary>Who actually launches the workers?</summary>
+
+The host runtime launches workers using its native mechanism, such as Codex subagents, Claude agents, a MiniMax wrapper, a local LLM runner, or a future optional harness.
+
+</details>
+
+<details>
+<summary>What does <code>route.py</code> actually do?</summary>
+
+`scripts/route.py` returns advisory JSON for routing, mode state, worker capsules, validator requirements, warnings, and prompt sanitization. It does not dispatch workers, enforce concurrency, apply timeouts, or collect worker results.
+
+</details>
+
+<details>
+<summary>Why not ship a full harness now?</summary>
+
+AgentFanout is designed to be host-runtime agnostic. Shipping a dispatcher would add implementation assumptions that reduce portability. A harness can be added later as an optional layer.
+
+</details>
+
+<details>
+<summary>What remains main-session only?</summary>
+
+MCP/private tools, secrets, git state changes, destructive actions, authenticated calls, and final synthesis remain in the main session.
+
+</details>
+
+<details>
+<summary>Will there be a future harness?</summary>
+
+Possibly. A future optional harness could add provider probes, key and endpoint checks, concurrency caps, timeouts, retries, cancellation, and normalized result capture.
+
+</details>
+
+## Author
+
+Created and maintained by [Trent Doney](https://github.com/trentdoney) at [SynapseGrid Labs](https://github.com/SynapseGrid-Labs).

@@ -2,6 +2,8 @@
 
 Each provider adapter should expose the same conceptual interface. Concrete implementations may be CLI, SDK, API, or provider-native subagent files.
 
+Provider adapters are contracts/templates unless a host runtime implements them. Methods such as `launchWorker()` and `launchValidator()` are interface concepts; they are not implemented by `scripts/route.py`.
+
 ```ts
 interface ProviderAdapter {
   canHandle(task): boolean
