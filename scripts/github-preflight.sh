@@ -27,6 +27,7 @@ grep_gate() {
   section "$name"
   local matches
   matches=$(git grep -n -E "$pattern" -- . ':!scripts/github-preflight.sh' 2>/dev/null || true)
+  matches=$(printf "%s\n" "$matches" | grep -v -E 'tests/fixtures\.json:.*(sk-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa|AKIA1234567890ABCDEF|Authorization: Bearer abcdefghijklmnopqrstuvwxyz123456|ghp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa|github_pat_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa|AIzaaaaaaaaaaaaaaaaaaaaaaaaaaaaa)' || true)
   if [[ -n "$matches" ]]; then
     echo "$matches" | sed -n '1,80p'
     echo "FAIL: $name"

@@ -95,6 +95,7 @@ Do not delegate merely because this skill is active. Stay main-session-only when
 - The task is a one-line edit, trivial copy change, or simple answer.
 - The task requires MCP or private account tools.
 - The task touches secrets or private credentials.
+- The task includes credential-shaped syntax such as bearer headers, API-key prefixes, access-key assignments, JWT-like values, private key blocks, or password-bearing DSNs.
 - The task changes git state.
 - The task is destructive or irreversible.
 - The expected orchestration overhead exceeds savings.

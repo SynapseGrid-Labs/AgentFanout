@@ -142,6 +142,8 @@ The main session always owns:
 - destructive or irreversible actions
 - final synthesis and user-facing conclusions
 
+Suspicious credential-shaped prompts remain main-session-only even when they do not use words like "secret" or "token".
+
 Workers receive only bounded task packets. They must return results to the main session and must not contact notification hooks, voice systems, webhooks, or callback URLs.
 
 ## Commands
