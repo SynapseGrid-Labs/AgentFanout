@@ -1,0 +1,38 @@
+# Cost Policy
+
+Use model selectors, not hardcoded model names. Provider adapters resolve selectors to current model names.
+
+## Selectors
+
+| Selector | Intended use |
+|---|---|
+| `current-frontier` | hardest synthesis, security, correctness, ambiguous architecture |
+| `current-balanced` | default robust cloud model for normal engineering and integration |
+| `current-fast-mini` | cheap simple classification, extraction, summaries, low-risk rewrites |
+| `local-coder` | local code understanding or bounded code generation |
+| `local-thinker` | local higher-reasoning model if available and proven capable |
+| `local-worker` | local cheap worker for summaries, classifications, extraction |
+| `local-chat` | local low-risk prose or conversational transformation |
+| `claude-frontier` | Claude high-capability reasoning/code review |
+| `claude-balanced` | Claude normal engineering/review worker |
+| `claude-fast` | Claude cheap/fast summary/classification worker |
+| `minimax-latest` | MiniMax capable agentic/code worker |
+| `minimax-fast` | MiniMax cheaper/faster worker for low/medium complexity |
+
+## Selection policy
+
+1. **Hard gates first**: MCP, secrets, git state, destructive actions, and final synthesis stay in the main session.
+2. **Local first when safe**: use local selectors only when reachability, loaded model, context, capability, and latency gates pass.
+3. **Cheapest capable path**: for simple independent tasks, use `local-worker`, then `current-fast-mini`, then low-cost external worker.
+4. **Balanced path**: for ordinary debugging, test generation, and data transformations, use `current-balanced`, `local-coder`, `claude-balanced`, or `minimax-latest` depending on preference and gates.
+5. **Frontier path**: reserve `current-frontier`, `claude-frontier`, or high-effort current runtime for high-risk design, correctness, or security.
+6. **Validator pairing**: use a validator at least as capable as the worker for high-risk outputs; for cheap/external workers, prefer an independent provider if available.
+7. **Reasoning effort is separate**: choose model selector and reasoning effort independently. A balanced model with high effort may be cheaper than a frontier model for bounded reasoning.
+
+## Serial vs parallel
+
+Use parallelism when subtasks are independent and outputs can be merged. Use serial delegation when one worker’s result defines the next scope. Use main-session-only for tiny, gated, or integration-heavy tasks.
+
+## Provider-native subagent vs subprocess worker
+
+Prefer provider-native subagents when the runtime supports scoped tools, clean permissions, and result capture. Use subprocess/API workers for providers that expose only API/CLI access. In both cases, the main session owns prompt sanitation, scope, validation, and integration.

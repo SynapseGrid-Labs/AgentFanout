@@ -1,0 +1,226 @@
+[
+  {
+    "name": "status default",
+    "prompt": "AgentFanout Status",
+    "expect": {
+      "command.type": "status",
+      "next_state.provider_mode": "Auto",
+      "status.fanout_policy": "automatic_guarded",
+      "status.startup_mode": "compact_skill_routing_only"
+    }
+  },
+  {
+    "name": "help command",
+    "prompt": "AgentFanout Help",
+    "expect": {
+      "command.type": "help",
+      "route.worth_delegating": false
+    },
+    "expect_contains": {
+      "command.valid_commands": "AgentFanout MiniMax"
+    }
+  },
+  {
+    "name": "set minimax",
+    "prompt": "AgentFanout MiniMax",
+    "expect": {
+      "command.type": "set_provider",
+      "next_state.provider_mode": "MiniMax"
+    }
+  },
+  {
+    "name": "set high preserves provider",
+    "prompt": "AgentFanout HIGH",
+    "state_json": {"provider_mode": "MiniMax", "effort_mode": "Auto", "fanout_policy": "automatic_guarded", "state_scope": "conversation_only"},
+    "expect": {
+      "command.type": "set_effort",
+      "next_state.provider_mode": "MiniMax",
+      "next_state.effort_mode": "High"
+    }
+  },
+  {
+    "name": "auto resets defaults",
+    "prompt": "AgentFanout Auto",
+    "state_json": {"provider_mode": "MiniMax", "effort_mode": "High", "fanout_policy": "automatic_guarded", "state_scope": "conversation_only"},
+    "expect": {
+      "command.type": "reset",
+      "next_state.provider_mode": "Auto",
+      "next_state.effort_mode": "Auto"
+    }
+  },
+  {
+    "name": "numeric fanout command invalid",
+    "prompt": "AgentFanout Fanout 12",
+    "state_json": {"provider_mode": "MiniMax", "effort_mode": "High", "fanout_policy": "automatic_guarded", "state_scope": "conversation_only"},
+    "expect": {
+      "command.type": "invalid",
+      "next_state.provider_mode": "MiniMax",
+      "route.worth_delegating": false
+    },
+    "expect_contains": {
+      "warnings": "invalid_command"
+    }
+  },
+  {
+    "name": "trivial prompt stays main session",
+    "prompt": "make a one-line copy edit",
+    "expect": {
+      "route.task_class": "small-edit",
+      "route.worth_delegating": false,
+      "orchestration_useful": false,
+      "references_to_load": []
+    }
+  },
+  {
+    "name": "auto fanout falls back to available cheap provider",
+    "prompt": "review twenty independent modules",
+    "expect": {
+      "route.worth_delegating": true,
+      "route.executor.provider": "MiniMax",
+      "fanout.planned_workers": 20,
+      "worker_capsule.memory_context": "none"
+    },
+    "expect_contains": {
+      "warnings": "provider_unavailable:local:service_reachability_unknown"
+    }
+  },
+  {
+    "name": "automatic fanout uses twenty workers",
+    "prompt": "review twenty independent modules",
+    "state_json": {"provider_mode": "MiniMax", "effort_mode": "Auto", "fanout_policy": "automatic_guarded", "state_scope": "conversation_only"},
+    "expect": {
+      "route.worth_delegating": true,
+      "route.executor.provider": "MiniMax",
+      "orchestration_useful": true,
+      "fanout.planned_workers": 20,
+      "worker_capsule.role_name": "Research Analyst",
+      "worker_capsule.memory_context": "none",
+      "worker_capsule.full_agents_context": false
+    },
+    "expect_contains": {
+      "references_to_load": "references/AgentCapsules.md"
+    }
+  },
+  {
+    "name": "coding worker gets coding specialist capsule",
+    "prompt": "debug this failing test",
+    "state_json": {"provider_mode": "MiniMax", "effort_mode": "Auto", "fanout_policy": "automatic_guarded", "state_scope": "conversation_only"},
+    "expect": {
+      "route.task_class": "debug",
+      "worker_capsule.role_name": "Coding Specialist",
+      "worker_capsule.full_codexagent_context": false
+    }
+  },
+  {
+    "name": "custom agents mark full agents composition",
+    "prompt": "spin up three custom skeptical security agents",
+    "expect": {
+      "route.worth_delegating": true,
+      "agent_composition_required": true,
+      "worker_capsule.role_name": "Security Reviewer",
+      "worker_capsule.memory_context": "none"
+    },
+    "expect_contains": {
+      "references_to_load": "~/.pai/skills/Agents/SKILL.md"
+    }
+  },
+  {
+    "name": "codex worker marks adapter",
+    "prompt": "use Codex subagents to review this design",
+    "state_json": {"provider_mode": "Codex", "effort_mode": "Auto", "fanout_policy": "automatic_guarded", "state_scope": "conversation_only"},
+    "expect": {
+      "codex_adapter_required": true
+    },
+    "expect_contains": {
+      "references_to_load": "adapters/Codex.md"
+    }
+  },
+  {
+    "name": "legacy agentorchestrator does not mutate state",
+    "prompt": "AgentOrchestrator MiniMax review three modules",
+    "expect": {
+      "command.type": "route",
+      "next_state.provider_mode": "Auto",
+      "route.executor.provider": "MiniMax"
+    },
+    "expect_contains": {
+      "warnings": "legacy_trigger_one_turn_hint_only"
+    }
+  },
+  {
+    "name": "legacy orchestratormode does not mutate state",
+    "prompt": "OrchestratorMode MiniMax review three modules",
+    "expect": {
+      "command.type": "route",
+      "next_state.provider_mode": "Auto",
+      "route.executor.provider": "MiniMax",
+      "fanout.planned_workers": 3
+    },
+    "expect_contains": {
+      "warnings": "legacy_trigger_one_turn_hint_only"
+    }
+  },
+  {
+    "name": "private mcp stays main session",
+    "prompt": "send an email",
+    "state_json": {"provider_mode": "MiniMax", "effort_mode": "Auto", "fanout_policy": "automatic_guarded", "state_scope": "conversation_only"},
+    "expect": {
+      "route.task_class": "mcp-inline",
+      "route.worth_delegating": false,
+      "hard_gates.requires_mcp_private_tools": true
+    }
+  },
+  {
+    "name": "clear approval executes pending plan",
+    "prompt": "implement it",
+    "pending_plan": true,
+    "expect": {
+      "approved_plan_should_execute": true,
+      "reason": "clear_approval"
+    }
+  },
+  {
+    "name": "ambiguous approval does not execute",
+    "prompt": "ok",
+    "pending_plan": true,
+    "expect": {
+      "approved_plan_should_execute": false,
+      "reason": "ambiguous_approval"
+    },
+    "expect_contains": {
+      "warnings": "approval_ambiguous"
+    }
+  },
+  {
+    "name": "approval words use phrase boundaries",
+    "prompt": "token rotation note",
+    "pending_plan": true,
+    "expect": {
+      "approved_plan_should_execute": false,
+      "reason": "no_clear_approval"
+    }
+  },
+  {
+    "name": "stale approval does not execute",
+    "prompt": "execute the plan",
+    "pending_plan": true,
+    "plan_stale": true,
+    "expect": {
+      "approved_plan_should_execute": false,
+      "reason": "plan_stale"
+    }
+  },
+  {
+    "name": "circuit breaker after failures",
+    "prompt": "review three independent modules",
+    "worker_failures": 3,
+    "state_json": {"provider_mode": "MiniMax", "effort_mode": "Auto", "fanout_policy": "automatic_guarded", "state_scope": "conversation_only"},
+    "expect": {
+      "circuit_breaker.triggered": true,
+      "circuit_breaker.failure_count": 3
+    },
+    "expect_contains": {
+      "warnings": "circuit_breaker_triggered"
+    }
+  }
+]
