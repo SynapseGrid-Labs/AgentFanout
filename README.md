@@ -261,3 +261,5 @@ Possibly. A future optional harness could add provider probes, key and endpoint 
 ## Maintainer
 
 [![Maintained by Trent Doney at SynapseGrid Labs](assets/readme/github-maintained-by-trent.jpg)](https://github.com/trentdoney)
+
+See [CONTRIBUTORS.md](CONTRIBUTORS.md) for contributor attribution.
