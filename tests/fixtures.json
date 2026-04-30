@@ -136,7 +136,7 @@
     }
   },
   {
-    "name": "codex cheap explorer uses explicit mini model override",
+    "name": "codex cheap explorer requires explicit mini capability override",
     "prompt": "use Codex subagents to classify these independent notes across many files",
     "state_json": {"provider_mode": "Codex", "effort_mode": "Auto", "fanout_policy": "automatic_guarded", "state_scope": "conversation_only"},
     "expect": {
@@ -146,7 +146,7 @@
       "route.executor.reasoning_effort": "low",
       "route.executor.runtime_launch.codex_native.cost_tier": "cheap",
       "route.executor.runtime_launch.codex_native.must_pass_model_override": true,
-      "route.executor.runtime_launch.codex_native.preferred_model_override": "gpt-5.4-mini",
+      "route.executor.runtime_launch.codex_native.required_model_capability": "mini_or_fast",
       "dispatch.runtime_launch.codex_native.do_not_use_default_frontier_for_fast_mini": true
     },
     "expect_contains": {
@@ -482,10 +482,19 @@
     "state_json": {"provider_mode": "MiniMax", "effort_mode": "Auto", "fanout_policy": "automatic_guarded", "state_scope": "conversation_only"},
     "expect": {
       "circuit_breaker.triggered": true,
-      "circuit_breaker.failure_count": 3
+      "circuit_breaker.failure_count": 3,
+      "route.worth_delegating": false,
+      "route.executor.provider": "main-session",
+      "route.parallelism": "none",
+      "fanout.planned_workers": 0,
+      "fanout.blocked": true,
+      "dispatch.status": "fanout_blocked",
+      "dispatch.planned_workers": 0,
+      "dispatch.fallback_allowed": false
     },
     "expect_contains": {
-      "warnings": "circuit_breaker_triggered"
+      "warnings": "circuit_breaker_triggered",
+      "fanout.guardrails_applied": "circuit_breaker_stopped_new_launches"
     }
   }
 ]

@@ -492,10 +492,10 @@ def runtime_launch(provider: str, selector: str, effort: str) -> dict[str, Any]:
             "do_not_use_default_frontier_for_fast_mini": selector == "current-fast-mini",
         }
         if selector == "current-fast-mini":
-            codex_native["preferred_model_override"] = "gpt-5.4-mini"
+            codex_native["required_model_capability"] = "mini_or_fast"
             codex_native["fallback_model_preference"] = "lowest_available_codex_mini_or_fast_model"
         elif selector == "current-frontier":
-            codex_native["preferred_model_override"] = "gpt-5.5"
+            codex_native["required_model_capability"] = "frontier_or_highest_capability"
         return {
             "provider": "Codex",
             "selector": selector,
@@ -809,8 +809,16 @@ def route(
     gates = hard_gates(task_prompt, task_class)
     delegation_wanted = should_delegate(task_class, task_prompt, gates)
     effort = reasoning_effort(task_class, task_prompt, next_state)
+    breaker = circuit_breaker(worker_failures)
+    if breaker["triggered"]:
+        warnings.append("circuit_breaker_triggered")
+        delegation_wanted = False
     role = role_for(task_class, task_prompt) if delegation_wanted else "main"
-    provider, selector, provider_warnings = choose_provider(task_prompt, next_state, task_class, effort, delegation_wanted)
+    provider_warnings: list[str]
+    if breaker["triggered"]:
+        provider, selector, provider_warnings = "main-session", "main-session", ["circuit_breaker_triggered:worker_failure_threshold"]
+    else:
+        provider, selector, provider_warnings = choose_provider(task_prompt, next_state, task_class, effort, delegation_wanted)
     warnings.extend(provider_warnings)
     fanout_blocked = False
     delegated = delegation_wanted
@@ -825,9 +833,10 @@ def route(
     codex_ref = codex_adapter_required(task_prompt, provider) or next_state["provider_mode"] == "Codex" or "codex" in task_prompt.lower()
     refs = references_to_load(task_prompt, provider, delegated, full_agents, codex_ref, pending_plan)
     capsule = capsule_for(task_class, task_prompt, role, delegated)
-    breaker = circuit_breaker(worker_failures)
     if breaker["triggered"]:
-        warnings.append("circuit_breaker_triggered")
+        fanout_blocked = True
+        if "circuit_breaker_stopped_new_launches" not in guardrails:
+            guardrails.append("circuit_breaker_stopped_new_launches")
 
     return {
         "command": command,

@@ -31,7 +31,7 @@ Use model selectors, not hardcoded model names. Provider adapters resolve select
 
 MiniMax note: do not choose `minimax-fast` by default. The local MiniMax wrapper maps fast mode to `MiniMax-M2.7-highspeed`, which may be unsupported by the current token plan. Use `minimax-latest` unless highspeed support has been explicitly verified.
 
-Codex note: `current-fast-mini` requires an explicit native Codex mini/fast model override. In the current runtime that is `gpt-5.4-mini`. Do not launch cheap Codex explorer workers with the host's default main-session/frontier model. If the host cannot satisfy `runtime_launch.codex_native.cost_tier=cheap`, block or reroute rather than silently overspending.
+Codex note: `current-fast-mini` requires an explicit native Codex mini/fast model override resolved by the host adapter. Do not launch cheap Codex explorer workers with the host's default main-session/frontier model. If the host cannot satisfy `runtime_launch.codex_native.cost_tier=cheap` and `required_model_capability=mini_or_fast`, block or reroute rather than silently overspending.
 
 ## Serial vs parallel
 

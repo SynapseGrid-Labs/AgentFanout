@@ -111,7 +111,7 @@ def test_stdin_prompt_route():
         "route.task_class": "bulk-classify",
         "route.executor.provider": "Codex",
         "route.executor.model_selector": "current-fast-mini",
-        "route.executor.runtime_launch.codex_native.preferred_model_override": "gpt-5.4-mini",
+        "route.executor.runtime_launch.codex_native.required_model_capability": "mini_or_fast",
     }
     failures = []
     for key, expected in checks.items():
