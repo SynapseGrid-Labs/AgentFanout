@@ -92,6 +92,38 @@ def test_sanitizer():
     return []
 
 
+def test_secret_output_redaction():
+    fake_secret = "sk-" + ("a" * 32)
+    secret_prompt = f"debug failing auth with {fake_secret}"
+    proc = subprocess.run(
+        [sys.executable, "-S", str(ROUTE), secret_prompt],
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        env=os.environ.copy(),
+    )
+    if proc.returncode != 0:
+        return [("secret_output_redaction", "returncode", 0, proc.returncode, proc.stderr)]
+    if fake_secret in proc.stdout:
+        return [("secret_output_redaction", "stdout", "redacted", proc.stdout, None)]
+    actual = json.loads(proc.stdout)
+    if not actual["hard_gates"]["requires_secrets"] or actual["route"]["worth_delegating"]:
+        return [("secret_output_redaction", "routing", "main-session secret gate", actual, None)]
+
+    sanitize_proc = subprocess.run(
+        [sys.executable, "-S", str(ROUTE), "--sanitize", "normal line\nDATABASE_PASSWORD=notarealpassword123"],
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        env=os.environ.copy(),
+    )
+    if sanitize_proc.returncode != 0:
+        return [("sanitize_secret_output_redaction", "returncode", 0, sanitize_proc.returncode, sanitize_proc.stderr)]
+    if "notarealpassword123" in sanitize_proc.stdout:
+        return [("sanitize_secret_output_redaction", "stdout", "redacted", sanitize_proc.stdout, None)]
+    return []
+
+
 def test_stdin_prompt_route():
     prompt = "AgentFanout Codex\nClassify these independent notes into categories with Codex subagents."
     env = os.environ.copy()
@@ -129,7 +161,7 @@ def test_retired_kernel_absent():
 
 
 def main():
-    failures = test_fixtures() + test_malformed_state() + test_sanitizer() + test_stdin_prompt_route() + test_retired_kernel_absent()
+    failures = test_fixtures() + test_malformed_state() + test_sanitizer() + test_secret_output_redaction() + test_stdin_prompt_route() + test_retired_kernel_absent()
     if failures:
         print(json.dumps(failures, indent=2))
         sys.exit(1)

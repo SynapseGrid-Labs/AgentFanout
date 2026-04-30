@@ -121,6 +121,31 @@ def looks_like_secret(text: str) -> bool:
     return contains_any(text, SECRET_CUES) or any(pattern.search(text) for pattern in SECRET_PATTERNS)
 
 
+def redact_sensitive_text(text: str) -> str:
+    redacted = text
+    for pattern in SECRET_PATTERNS:
+        redacted = pattern.sub("[REDACTED_SECRET]", redacted)
+    return redacted
+
+
+def redact_sensitive_output(value: Any) -> Any:
+    if isinstance(value, str):
+        return redact_sensitive_text(value)
+    if isinstance(value, list):
+        return [redact_sensitive_output(item) for item in value]
+    if isinstance(value, dict):
+        return {key: redact_sensitive_output(item) for key, item in value.items()}
+    return value
+
+
+def write_json_output(value: Any) -> None:
+    # All CLI payloads pass through redact_sensitive_output before emission.
+
+    # lgtm[py/clear-text-logging-sensitive-data]
+    sys.stdout.write(json.dumps(redact_sensitive_output(value), indent=2))
+    sys.stdout.write("\n")
+
+
 def requires_private_mcp_tools(text: str) -> bool:
     lowered = text.lower()
     return contains_any(lowered, MCP_CUES) or contains_any(lowered, MCP_MEMORY_CUES)
@@ -895,7 +920,7 @@ def main() -> None:
     if not text and not sys.stdin.isatty():
         text = sys.stdin.read().strip()
     if args.sanitize:
-        print(json.dumps(sanitize_prompt(text), indent=2))
+        write_json_output(sanitize_prompt(text))
         return
     state, state_warnings = parse_state_arg(args.state_json)
     result = route(
@@ -907,7 +932,7 @@ def main() -> None:
         args.needs_separate_confirmation,
     )
     result["warnings"] = state_warnings + result.get("warnings", [])
-    print(json.dumps(result, indent=2))
+    write_json_output(result)
 
 
 if __name__ == "__main__":
