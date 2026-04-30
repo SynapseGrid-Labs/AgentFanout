@@ -19,9 +19,11 @@ supportsTools: API-dependent
 supportsFileEditing: false unless wrapped by an edit harness
 supportsReasoningEffort: provider-dependent
 model_selectors:
-  cheap: minimax-fast
+  default: minimax-latest
   balanced: minimax-latest
 ```
+
+Do not use `minimax-fast` or pass `MiniMaxExec --fast` unless the runtime has explicitly verified that the current MiniMax token plan supports `MiniMax-M2.7-highspeed`. In this environment the token plan does not support highspeed, so AgentFanout routes MiniMax workers to the default supported model selector.
 
 ## Routing rule
 
@@ -49,7 +51,7 @@ MiniMax workers must not receive:
 ```yaml
 role: external-worker
 scope: <bounded data/files/claim>
-model_selector: minimax-fast|minimax-latest
+model_selector: minimax-latest
 reasoning_effort: low|medium|high
 output_contract: <summary/evidence/patch instructions>
 validator_required: true

@@ -29,9 +29,9 @@ Only these commands mutate `next_state`. Legacy OrchestratorMode and CodexAgent 
 ## Provider/Effort Matrix
 
 - Auto: choose cheapest capable safe route; prefer local only when readiness passes.
-- MiniMax: use `minimax-fast` or `minimax-latest` for eligible workers; validate with Codex/native main-session capability when possible.
+- MiniMax: use `minimax-latest` for eligible workers; use `minimax-fast` only after the runtime verifies highspeed support for the active token plan. Validate with Codex/native main-session capability when possible.
 - Local: use `local-worker`, `local-coder`, `local-thinker`, or `local-chat` only after readiness gates pass.
-- Codex: use native Codex subagents only when the runtime host exposes them; otherwise fall back to main-session routing.
+- Codex: use native Codex subagents only when the runtime host exposes them; otherwise fall back to main-session routing. For `current-fast-mini`, pass the explicit mini/fast model override from `runtime_launch.codex_native` instead of allowing the host default model.
 - Claude: use `claude-fast`, `claude-balanced`, or `claude-frontier` only when a safe adapter is configured.
 - High effort: quality-first non-premium frontier/latest selector with high reasoning; use extra-high where supported for security, release, architecture, migration, high-stakes, or ambiguous synthesis tasks.
 

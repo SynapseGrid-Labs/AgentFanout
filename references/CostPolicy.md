@@ -16,8 +16,8 @@ Use model selectors, not hardcoded model names. Provider adapters resolve select
 | `claude-frontier` | Claude high-capability reasoning/code review |
 | `claude-balanced` | Claude normal engineering/review worker |
 | `claude-fast` | Claude cheap/fast summary/classification worker |
-| `minimax-latest` | MiniMax capable agentic/code worker |
-| `minimax-fast` | MiniMax cheaper/faster worker for low/medium complexity |
+| `minimax-latest` | MiniMax default supported worker selector |
+| `minimax-fast` | Optional only when the runtime has verified highspeed support for the active token plan |
 
 ## Selection policy
 
@@ -28,6 +28,10 @@ Use model selectors, not hardcoded model names. Provider adapters resolve select
 5. **Frontier path**: reserve `current-frontier`, `claude-frontier`, or high-effort current runtime for high-risk design, correctness, or security.
 6. **Validator pairing**: use a validator at least as capable as the worker for high-risk outputs; for cheap/external workers, prefer an independent provider if available.
 7. **Reasoning effort is separate**: choose model selector and reasoning effort independently. A balanced model with high effort may be cheaper than a frontier model for bounded reasoning.
+
+MiniMax note: do not choose `minimax-fast` by default. The local MiniMax wrapper maps fast mode to `MiniMax-M2.7-highspeed`, which may be unsupported by the current token plan. Use `minimax-latest` unless highspeed support has been explicitly verified.
+
+Codex note: `current-fast-mini` requires an explicit native Codex mini/fast model override resolved by the host adapter. Do not launch cheap Codex explorer workers with the host's default main-session/frontier model. If the host cannot satisfy `runtime_launch.codex_native.cost_tier=cheap` and `required_model_capability=mini_or_fast`, block or reroute rather than silently overspending.
 
 ## Serial vs parallel
 

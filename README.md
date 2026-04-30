@@ -16,22 +16,31 @@ The diagrams show the intended orchestration flow. Worker launch is performed by
 
 AgentFanout is `v0.1.0`. It is a portable skill/policy layer and deterministic advisory router, not a standalone dispatch harness. It is designed to be embedded into agent runtimes that already have a worker mechanism, such as Codex subagents, Claude agents, MiniMax wrappers, local LLM runners, or future provider adapters.
 
+## Public Release Gate
+
+AgentFanout is public-facing. Maintainer-originated GitHub-facing changes are treated as release work, not scratch-pad updates. Maintainers must complete the local source review gate and full security audit described in [Release Process](docs/release-process.md) before creating or updating any GitHub-facing branch, pull request, tag, release, or public export.
+
 ## Table of Contents
 
 - [Execution Model](#execution-model)
+- [Public Release Gate](#public-release-gate)
 - [Who This Is For](#who-this-is-for)
 - [What It Does](#what-it-does)
 - [What This Is Not](#what-this-is-not)
 - [Quickstart](#quickstart)
 - [Deterministic Router](#deterministic-router)
 - [Safety Model](#safety-model)
+- [Release Process](docs/release-process.md)
 - [FAQ](#faq)
 
 ## Execution Model
 
 - **Skill Mode:** The host agent uses AgentFanout instructions to decompose, delegate, validate, and integrate work.
-- **Router Mode:** `scripts/route.py` returns advisory JSON and sanitization output. It does not launch workers.
+- **Worker-First Mode:** Broad investigations, repo searches, infrastructure research, and multi-surface debugging should launch scoped workers before the main session starts collecting evidence.
+- **Router Mode:** `scripts/route.py` returns advisory JSON, dispatch requirements, and sanitization output. It does not launch workers by itself.
 - **Harness Mode:** A standalone dispatcher is possible future infrastructure. It is not currently shipped.
+
+If `scripts/route.py` reports `dispatch.status=launch_required`, the host runtime should launch workers using its native mechanism before substantive main-session research. While workers run, the main session should coordinate, wait, validate, and integrate rather than duplicate the workers' SSH diagnostics, filesystem sweeps, repo-wide search, or substantive research. If no worker mechanism is available, hosts should surface `fanout_blocked` rather than silently falling back to main-session-only work.
 
 ## Who This Is For
 
@@ -92,7 +101,7 @@ python3 scripts/route.py --sanitize "prompt text"
 
 ## Deterministic Router
 
-`scripts/route.py` classifies a request, checks hard gates, selects a provider preference, estimates useful fanout, returns a worker capsule, and reports validator requirements.
+`scripts/route.py` classifies a request, checks hard gates, selects a provider preference, estimates useful fanout, returns a worker capsule, reports dispatch requirements, and reports validator requirements.
 
 Example output shape:
 
@@ -105,13 +114,20 @@ Example output shape:
     "executor": {
       "role": "explorer",
       "provider": "MiniMax",
-      "model_selector": "minimax-fast",
+      "model_selector": "minimax-latest",
       "reasoning_effort": "low"
     }
   },
   "fanout": {
     "policy": "automatic_guarded",
     "planned_workers": 20
+  },
+  "dispatch": {
+    "status": "launch_required",
+    "main_session_policy": "coordinate_wait_integrate",
+    "launch_before_main_research": true,
+    "main_session_may_duplicate_worker_research": false,
+    "fallback_allowed": false
   },
   "validator": {
     "required": true
@@ -132,6 +148,8 @@ The router also checks `$PAI_DIR/skills/MiniMax/Tools/MiniMaxExec.ts` or `$PAI_H
 
 Readiness flags and file checks are routing hints. They do not perform live endpoint probing, key validation, or health checks.
 
+MiniMax highspeed is not assumed. AgentFanout uses the default supported MiniMax selector unless the host runtime has verified that the active token plan supports highspeed mode.
+
 ## Safety Model
 
 The main session always owns:
@@ -145,6 +163,8 @@ The main session always owns:
 Suspicious credential-shaped prompts remain main-session-only even when they do not use words like "secret" or "token".
 
 Workers receive only bounded task packets. They must return results to the main session and must not contact notification hooks, voice systems, webhooks, or callback URLs.
+
+Read-only research workers may use scoped read-only retrieval and diagnostics when assigned by the host: repo/file reads, filesystem search, runtime-approved knowledge-base retrieval, public web or docs research, read-only SSH diagnostics, and read-only database queries where configured. That read-only scope does not include private-account side effects, secrets, git mutations, destructive actions, or final synthesis.
 
 ## Commands
 
@@ -200,6 +220,13 @@ No. `scripts/route.py` uses deterministic cues and regexes as one input, then ap
 <summary>Who actually launches the workers?</summary>
 
 The host runtime launches workers using its native mechanism, such as Codex subagents, Claude agents, a MiniMax wrapper, a local LLM runner, or a future optional harness.
+
+</details>
+
+<details>
+<summary>What happens if AgentFanout wants workers but none are available?</summary>
+
+The route should surface `fanout_blocked`. The host should report that worker launch is unavailable instead of letting the main session quietly perform the whole broad investigation.
 
 </details>
 

@@ -136,6 +136,24 @@
     }
   },
   {
+    "name": "codex cheap explorer requires explicit mini capability override",
+    "prompt": "use Codex subagents to classify these independent notes across many files",
+    "state_json": {"provider_mode": "Codex", "effort_mode": "Auto", "fanout_policy": "automatic_guarded", "state_scope": "conversation_only"},
+    "expect": {
+      "codex_adapter_required": true,
+      "route.task_class": "bulk-classify",
+      "route.executor.model_selector": "current-fast-mini",
+      "route.executor.reasoning_effort": "low",
+      "route.executor.runtime_launch.codex_native.cost_tier": "cheap",
+      "route.executor.runtime_launch.codex_native.must_pass_model_override": true,
+      "route.executor.runtime_launch.codex_native.required_model_capability": "mini_or_fast",
+      "dispatch.runtime_launch.codex_native.do_not_use_default_frontier_for_fast_mini": true
+    },
+    "expect_contains": {
+      "references_to_load": "adapters/Codex.md"
+    }
+  },
+  {
     "name": "legacy agentorchestrator does not mutate state",
     "prompt": "AgentOrchestrator MiniMax review three modules",
     "expect": {
@@ -168,6 +186,37 @@
       "route.task_class": "mcp-inline",
       "route.worth_delegating": false,
       "hard_gates.requires_mcp_private_tools": true
+    }
+  },
+  {
+    "name": "private memory request stays main session",
+    "prompt": "use memory to recall private context about this project",
+    "state_json": {"provider_mode": "MiniMax", "effort_mode": "Auto", "fanout_policy": "automatic_guarded", "state_scope": "conversation_only"},
+    "expect": {
+      "route.task_class": "mcp-inline",
+      "route.worth_delegating": false,
+      "hard_gates.requires_mcp_private_tools": true,
+      "selected_provider": "main-session"
+    }
+  },
+  {
+    "name": "host memory usage investigation routes to minimax research worker",
+    "prompt": "I want you to research what is going on with the staging host and why its memory usage is so large. use read-only diagnostics for access. agentfanout minimax",
+    "state_json": {"provider_mode": "Auto", "effort_mode": "Auto", "fanout_policy": "automatic_guarded", "state_scope": "conversation_only"},
+    "expect": {
+      "route.task_class": "bulk-read",
+      "route.worth_delegating": true,
+      "route.parallelism": "parallel",
+      "route.executor.provider": "MiniMax",
+      "hard_gates.requires_mcp_private_tools": false,
+      "fanout.planned_workers": 3,
+      "worker_capsule.worker_type": "research_worker",
+      "dispatch.status": "launch_required",
+      "dispatch.main_session_policy": "coordinate_wait_integrate",
+      "dispatch.main_session_may_duplicate_worker_research": false
+    },
+    "expect_contains_all": {
+      "fanout.work_units": ["live_host_state", "process_service_state"]
     }
   },
   {
@@ -301,6 +350,72 @@
     }
   },
   {
+    "name": "failed remote host investigation requires worker-first fanout",
+    "prompt": "I need you to fully investigate the staging host. We ran a demo application there days ago and I feel like we have a lot of stale processes that need shut down. full investigation agentfanout minimax",
+    "state_json": {"provider_mode": "Auto", "effort_mode": "Auto", "fanout_policy": "automatic_guarded", "state_scope": "conversation_only"},
+    "expect": {
+      "route.task_class": "bulk-read",
+      "route.worth_delegating": true,
+      "route.parallelism": "parallel",
+      "route.executor.provider": "MiniMax",
+      "fanout.planned_workers": 3,
+      "worker_capsule.worker_type": "research_worker",
+      "dispatch.status": "launch_required",
+      "dispatch.launch_before_main_research": true,
+      "dispatch.fallback_allowed": false,
+      "dispatch.main_session_policy": "coordinate_wait_integrate",
+      "dispatch.main_session_may_duplicate_worker_research": false
+    },
+    "expect_contains": {
+      "worker_capsule.read_only_tool_scope": "read_only_ssh_diagnostics_when_explicitly_scoped",
+      "fanout.work_units": "live_host_state"
+    }
+  },
+  {
+    "name": "integration path investigation does not small-edit",
+    "prompt": "Investigate how the notification integration communicates with the workflow service, whether notification controllers are inside that service, and whether the integration path exists; use MiniMax as a read-only second-opinion validator.",
+    "state_json": {"provider_mode": "Auto", "effort_mode": "Auto", "fanout_policy": "automatic_guarded", "state_scope": "conversation_only"},
+    "expect": {
+      "route.task_class": "bulk-read",
+      "route.worth_delegating": true,
+      "route.parallelism": "parallel",
+      "route.executor.provider": "MiniMax",
+      "fanout.planned_workers": 4,
+      "worker_capsule.worker_type": "research_worker",
+      "dispatch.status": "launch_required",
+      "dispatch.launch_before_main_research": true,
+      "dispatch.main_session_policy": "coordinate_wait_integrate",
+      "dispatch.main_session_may_duplicate_worker_research": false
+    },
+    "expect_contains": {
+      "fanout.work_units": "independent_validation"
+    }
+  },
+  {
+    "name": "fanout unavailable blocks instead of silent main-session fallback",
+    "prompt": "fully investigate repo services and verify the path exists",
+    "env": {
+      "PAI_DIR": "/tmp/agentfanout-no-pai",
+      "AGENT_FANOUT_MINIMAX_AVAILABLE": "0",
+      "AGENT_FANOUT_CODEX_SUBAGENTS": "0",
+      "AGENT_FANOUT_LOCAL_AVAILABLE": "0",
+      "AGENT_FANOUT_CLAUDE_AVAILABLE": "0"
+    },
+    "unset_env": ["CODEX_THREAD_ID", "PAI_CODEX_LAUNCH_ID"],
+    "expect": {
+      "route.task_class": "bulk-read",
+      "route.worth_delegating": false,
+      "fanout.blocked": true,
+      "dispatch.required": true,
+      "dispatch.status": "fanout_blocked",
+      "dispatch.fallback_allowed": false,
+      "dispatch.main_session_policy": "report_block"
+    },
+    "expect_contains": {
+      "warnings": "provider_unavailable:codex:native_subagents_unknown"
+    }
+  },
+  {
     "name": "clear approval executes pending plan",
     "prompt": "implement it",
     "pending_plan": true,
@@ -341,16 +456,45 @@
     }
   },
   {
+    "name": "planning prompt keeps plan precedence over broad research words",
+    "prompt": "plan how to migrate the architecture safely",
+    "state_json": {"provider_mode": "MiniMax", "effort_mode": "Auto", "fanout_policy": "automatic_guarded", "state_scope": "conversation_only"},
+    "expect": {
+      "route.task_class": "plan",
+      "route.executor.reasoning_effort": "high",
+      "route.executor.provider": "MiniMax"
+    }
+  },
+  {
+    "name": "reasoning prompt keeps reason precedence over investigation words",
+    "prompt": "reason about correctness and prove the invariant before implementation",
+    "state_json": {"provider_mode": "MiniMax", "effort_mode": "Auto", "fanout_policy": "automatic_guarded", "state_scope": "conversation_only"},
+    "expect": {
+      "route.task_class": "reason",
+      "route.executor.reasoning_effort": "high",
+      "route.executor.provider": "MiniMax"
+    }
+  },
+  {
     "name": "circuit breaker after failures",
     "prompt": "review three independent modules",
     "worker_failures": 3,
     "state_json": {"provider_mode": "MiniMax", "effort_mode": "Auto", "fanout_policy": "automatic_guarded", "state_scope": "conversation_only"},
     "expect": {
       "circuit_breaker.triggered": true,
-      "circuit_breaker.failure_count": 3
+      "circuit_breaker.failure_count": 3,
+      "route.worth_delegating": false,
+      "route.executor.provider": "main-session",
+      "route.parallelism": "none",
+      "fanout.planned_workers": 0,
+      "fanout.blocked": true,
+      "dispatch.status": "fanout_blocked",
+      "dispatch.planned_workers": 0,
+      "dispatch.fallback_allowed": false
     },
     "expect_contains": {
-      "warnings": "circuit_breaker_triggered"
+      "warnings": "circuit_breaker_triggered",
+      "fanout.guardrails_applied": "circuit_breaker_stopped_new_launches"
     }
   }
 ]

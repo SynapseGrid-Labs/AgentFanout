@@ -24,6 +24,10 @@ def run_route(case):
     env = os.environ.copy()
     env.setdefault("AGENT_FANOUT_MINIMAX_AVAILABLE", "1")
     env.setdefault("AGENT_FANOUT_CODEX_SUBAGENTS", "1")
+    for name in case.get("unset_env", []):
+        env.pop(name, None)
+    for name, value in case.get("env", {}).items():
+        env[name] = str(value)
     if case.get("state_json") is not None:
         cmd.extend(["--state-json", json.dumps(case["state_json"])])
     if case.get("worker_failures") is not None:
@@ -50,6 +54,11 @@ def test_fixtures():
             got = get_path(actual, key)
             if expected not in got:
                 failures.append((case["name"], key, f"contains {expected}", got, actual))
+        for key, expected_values in case.get("expect_contains_all", {}).items():
+            got = get_path(actual, key)
+            for expected in expected_values:
+                if expected not in got:
+                    failures.append((case["name"], key, f"contains {expected}", got, actual))
     return failures
 
 
@@ -83,6 +92,35 @@ def test_sanitizer():
     return []
 
 
+def test_stdin_prompt_route():
+    prompt = "AgentFanout Codex\nClassify these independent notes into categories with Codex subagents."
+    env = os.environ.copy()
+    env["AGENT_FANOUT_CODEX_SUBAGENTS"] = "1"
+    proc = subprocess.run(
+        [sys.executable, "-S", str(ROUTE), "--state-json", json.dumps({"provider_mode": "Codex", "effort_mode": "Auto", "fanout_policy": "automatic_guarded", "state_scope": "conversation_only"})],
+        input=prompt,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        env=env,
+    )
+    if proc.returncode != 0:
+        return [("stdin_prompt_route", "returncode", 0, proc.returncode, proc.stderr)]
+    actual = json.loads(proc.stdout)
+    checks = {
+        "route.task_class": "bulk-classify",
+        "route.executor.provider": "Codex",
+        "route.executor.model_selector": "current-fast-mini",
+        "route.executor.runtime_launch.codex_native.required_model_capability": "mini_or_fast",
+    }
+    failures = []
+    for key, expected in checks.items():
+        got = get_path(actual, key)
+        if got != expected:
+            failures.append(("stdin_prompt_route", key, expected, got, actual))
+    return failures
+
+
 def test_retired_kernel_absent():
     kernel = ROOT / "references" / "Kernel.md"
     if kernel.exists():
@@ -91,7 +129,7 @@ def test_retired_kernel_absent():
 
 
 def main():
-    failures = test_fixtures() + test_malformed_state() + test_sanitizer() + test_retired_kernel_absent()
+    failures = test_fixtures() + test_malformed_state() + test_sanitizer() + test_stdin_prompt_route() + test_retired_kernel_absent()
     if failures:
         print(json.dumps(failures, indent=2))
         sys.exit(1)

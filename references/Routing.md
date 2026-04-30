@@ -44,6 +44,10 @@ Delegate when at least one condition is true and no hard gate blocks it:
 
 Do not delegate when orchestration overhead dominates.
 
+Broad investigation is worker-first. Prompts such as "fully investigate", "find whether X exists", "trace how X talks to Y", or multi-surface host/repo/service research should produce research workers before the main session starts gathering evidence. After launch, the main session coordinates, waits, validates, and integrates; it must not duplicate the workers' SSH diagnostics, filesystem sweeps, repo-wide search, or substantive research. If no provider can launch workers, the route must expose `fanout_blocked` instead of silently converting the job into main-session research.
+
+Research workers may receive scoped read-only tool access when assigned by the host runtime: repo/file reads, filesystem search, runtime-approved knowledge-base reads, public web/docs research, read-only SSH diagnostics, and read-only database queries where configured. These are not permission to perform private-account side effects, handle secrets, change git state, run destructive operations, or write final synthesis.
+
 ## Independence test
 
 A subtask is independent only if it has:
