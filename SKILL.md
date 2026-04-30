@@ -13,6 +13,8 @@ AgentFanout is not injected into session startup. It loads through compact skill
 
 The main session remains the orchestrator, security boundary, and final integrator.
 
+For broad investigation, repo search, infrastructure research, and multi-surface debugging, the main session must dispatch workers before doing substantive research when a worker mechanism is available. After dispatch, the main session coordinates, waits, validates, and integrates; it must not duplicate the workers' SSH diagnostics, filesystem sweeps, repo-wide search, or substantive research while workers are running. If no worker mechanism is available, report `fanout_blocked` instead of silently doing all research in the main session.
+
 It may use host-runtime worker mechanisms for bounded helpers when available, but it must keep these responsibilities in the main session:
 
 - MCP/tool work: memory, calendar, email, chat, browser automation, workspace tools, private search, or any other private/tool-backed system.
@@ -22,6 +24,8 @@ It may use host-runtime worker mechanisms for bounded helpers when available, bu
 - Final answer, final synthesis, final patch integration, and user-facing conclusions.
 
 ## Activation workflow
+
+Do not perform repo-wide, vault-wide, or home-directory searches to rediscover AgentFanout before routing. Once this skill is selected, use this skill directory directly, read only the minimal referenced files needed, and run `scripts/route.py` before any broad search or substantive research.
 
 1. Classify and route with `scripts/route.py`, `workflows/Route.md`, and `references/Routing.md`.
 2. Apply lazy-loading rules from `references/LazyExecution.md`.
@@ -56,6 +60,8 @@ Fanout is automatic and guarded. AgentFanout chooses the useful number of worker
 
 Every delegated worker receives a minimal specialist capsule by default. Do not load automatic memory, relationship history, full Agents context, full CodexAgent context, voice metadata, or private MCP context into worker prompts.
 
+Research workers may use scoped read-only tools when explicitly assigned: repo/file reads, filesystem search, runtime-approved knowledge-base retrieval, public web or docs research, read-only SSH diagnostics, and read-only database queries where the environment already permits them. They must not perform private-account side effects, write state, touch secrets, mutate git state, perform destructive actions, or own final synthesis.
+
 Load full Agents tooling only for named, custom, personality-heavy, trait-heavy, or user-requested specialist composition beyond the compact capsule.
 
 ## Approval-to-execution
@@ -75,6 +81,12 @@ fanout:
   policy: automatic_guarded
   planned_workers: <number>
   rationale: <why this count is useful>
+dispatch:
+  status: launch_required|fanout_blocked|not_required
+  main_session_policy: coordinate_wait_integrate|report_block|handle_directly
+  launch_before_main_research: true|false
+  main_session_may_duplicate_worker_research: false
+  fallback_allowed: true|false
 executor:
   role: main|explorer|worker|external-worker|local-worker
   provider: current|codex|claude|local-llm|minimax|future
@@ -99,6 +111,8 @@ Do not delegate merely because this skill is active. Stay main-session-only when
 - The task changes git state.
 - The task is destructive or irreversible.
 - The expected orchestration overhead exceeds savings.
+
+If delegation is useful but all worker providers are unavailable, stop and surface the block. Do not treat that state as permission for the orchestrator to consume the full research context itself.
 
 ## Built-in deterministic helper
 

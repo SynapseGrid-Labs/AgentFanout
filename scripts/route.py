@@ -50,6 +50,16 @@ ORCH_TRIGGERS = [
     "local llm workers", "multi-agent", "fan out", "provider-agnostic",
     "cost-aware", "agents",
 ]
+INVESTIGATION_CUES = [
+    "investigate", "full investigation", "research", "find", "search", "look up",
+    "trace", "prove", "proof", "where", "whether", "exists", "how", "what is",
+    "current state", "stale process", "stale processes", "running process",
+    "service", "services", "host", "controller", "controllers", "path", "repo",
+]
+BROAD_INVESTIGATION_CUES = [
+    "full investigation", "fully investigate", "deep investigation", "complete investigation",
+    "audit", "security check", "read-only diagnostics", "multiple systems", "cross-check",
+]
 SPECIALIST_AGENT_CUES = [
     "custom agent", "custom agents", "named agent", "named agents", "personality",
     "personalities", "traits", "specialist agents", "specialized agents", "skeptical",
@@ -60,9 +70,14 @@ CLEAR_APPROVALS = ["approved", "implement it", "do it", "execute the plan", "yes
 AMBIGUOUS_APPROVALS = ["ok", "okay", "sounds good", "maybe", "continue", "interesting"]
 
 MCP_CUES = [
-    "memory", "calendar", "gmail", "email", "send an email", "asana", "slack",
+    "calendar", "gmail", "email", "send an email", "asana", "slack",
     "discord", "playwright", "gws", "google workspace", "private search",
     "workspace tool", "mcp",
+]
+MCP_MEMORY_CUES = [
+    "use memory", "search memory", "search memories", "saved memory",
+    "private memory", "memory mcp", "recall from memory", "look in memory",
+    "check memory", "remembered context",
 ]
 SECRET_CUES = ["secret", "api key", "token", "credential", "password", "private key"]
 SECRET_PATTERNS = [
@@ -104,6 +119,11 @@ def contains_any(text: str, cues: list[str]) -> bool:
 
 def looks_like_secret(text: str) -> bool:
     return contains_any(text, SECRET_CUES) or any(pattern.search(text) for pattern in SECRET_PATTERNS)
+
+
+def requires_private_mcp_tools(text: str) -> bool:
+    lowered = text.lower()
+    return contains_any(lowered, MCP_CUES) or contains_any(lowered, MCP_MEMORY_CUES)
 
 
 def canonical_provider(value: str) -> str:
@@ -248,7 +268,7 @@ def sanitize_prompt(prompt: str) -> dict[str, Any]:
 
 def classify(prompt: str) -> str:
     p = prompt.lower()
-    if contains_any(p, MCP_CUES):
+    if requires_private_mcp_tools(p):
         return "mcp-inline"
     if contains_any(p, GIT_STATE_CUES) or contains_any(p, GIT_READ_CUES):
         return "git-ops"
@@ -266,6 +286,8 @@ def classify(prompt: str) -> str:
         return "bulk-classify"
     if "csv" in p or "json" in p or "etl" in p or "schema" in p or "reshape" in p or "parse" in p:
         return "data-xform"
+    if contains_any(p, INVESTIGATION_CUES):
+        return "bulk-read"
     if "logs" in p or "summarize" in p or "grep" in p or "review these" in p or "modules" in p:
         return "bulk-read"
     if "architecture" in p or "migration" in p or "design" in p or "strategy" in p or "spec" in p or "plan" in p:
@@ -370,6 +392,16 @@ def should_delegate(task_class: str, prompt: str, gates: dict[str, bool]) -> boo
     return explicit or complex_class
 
 
+def worker_kind(task_class: str, role: str) -> str:
+    if role == "main":
+        return "main_session"
+    if role == "worker":
+        return "execution_worker"
+    if task_class in {"bulk-read", "plan", "security-review", "reason"} or role == "explorer":
+        return "research_worker"
+    return "task_worker"
+
+
 def env_flag(*names: str) -> bool:
     return any(os.getenv(name, "").lower() in {"1", "true", "yes"} for name in names)
 
@@ -421,7 +453,7 @@ def readiness(provider: str, selector: str) -> tuple[bool, list[str]]:
 def selector_for(provider: str, effort: str, task_class: str) -> str:
     high = effort in {"high", "xhigh"}
     if provider == "MiniMax":
-        return "minimax-latest" if high else "minimax-fast"
+        return "minimax-latest"
     if provider == "Local":
         if high:
             return "local-thinker"
@@ -437,6 +469,42 @@ def selector_for(provider: str, effort: str, task_class: str) -> str:
             return "claude-frontier"
         return "claude-balanced" if effort == "medium" else "claude-fast"
     return "main-session"
+
+
+def runtime_launch(provider: str, selector: str, effort: str) -> dict[str, Any]:
+    if provider == "Codex":
+        model_preference = {
+            "current-fast-mini": "fast-mini",
+            "current-balanced": "balanced",
+            "current-frontier": "frontier",
+        }.get(selector, "provider-default")
+        cost_tier = {
+            "current-fast-mini": "cheap",
+            "current-balanced": "balanced",
+            "current-frontier": "frontier",
+        }.get(selector, "unknown")
+        codex_native: dict[str, Any] = {
+            "agent_type": "explorer" if selector == "current-fast-mini" else "default",
+            "cost_tier": cost_tier,
+            "model_preference": model_preference,
+            "reasoning_effort": effort,
+            "must_pass_model_override": selector == "current-fast-mini",
+            "do_not_use_default_frontier_for_fast_mini": selector == "current-fast-mini",
+        }
+        if selector == "current-fast-mini":
+            codex_native["preferred_model_override"] = "gpt-5.4-mini"
+            codex_native["fallback_model_preference"] = "lowest_available_codex_mini_or_fast_model"
+        elif selector == "current-frontier":
+            codex_native["preferred_model_override"] = "gpt-5.5"
+        return {
+            "provider": "Codex",
+            "selector": selector,
+            "codex_native": codex_native,
+        }
+    return {
+        "provider": provider,
+        "selector": selector,
+    }
 
 
 def auto_provider_candidates(task_class: str, effort: str) -> list[str]:
@@ -470,12 +538,31 @@ def choose_provider(prompt: str, state: dict[str, Any], task_class: str, effort:
     return "main-session", "main-session", warnings
 
 
+def investigation_dimensions(prompt: str) -> list[str]:
+    lowered = prompt.lower()
+    dimensions: list[str] = []
+    if contains_any(lowered, ["knowledge base", "prior", "history", "incident", "document", "docs"]):
+        dimensions.append("knowledge_base_context")
+    if contains_any(lowered, ["host", "minion", ".233", "lila", "server", "machine", "ssh"]):
+        dimensions.append("live_host_state")
+    if contains_any(lowered, ["process", "processes", "service", "services", "comfyui", "gpu", "port", "docker", "ram", "swap", "memory usage"]):
+        dimensions.append("process_service_state")
+    if contains_any(lowered, ["repo", "code", "controller", "controllers", "path", "forman", "foreman", "cmux", "telegram"]):
+        dimensions.append("repo_code_path_trace")
+    if contains_any(lowered, ["whether", "exists", "prove", "proof", "verify", "cross-check", "validate"]):
+        dimensions.append("independent_validation")
+    if contains_any(lowered, ["security", "public", "github", "release", "preflight"]):
+        dimensions.append("security_release_review")
+    return dimensions
+
+
 def estimate_work_units(prompt: str, task_class: str, delegated: bool) -> tuple[int, list[str], list[str]]:
     if not delegated:
         return 0, [], ["delegation_not_useful_or_hard_gated"]
     lowered = prompt.lower()
     word_numbers = {"two": 2, "three": 3, "four": 4, "five": 5, "ten": 10, "twelve": 12, "twenty": 20}
     count = 1
+    dimensions = investigation_dimensions(prompt) if task_class == "bulk-read" else []
     for pattern in [
         r"\b(\d{1,3})\s+(?:independent\s+)?(?:modules|files|items|tasks|services|components|workstreams|things)\b",
         r"\b(\d{1,3})\s+independent\b",
@@ -494,12 +581,21 @@ def estimate_work_units(prompt: str, task_class: str, delegated: bool) -> tuple[
                 count = 4
             elif task_class in {"plan", "refactor", "security-review", "debug", "test-gen"}:
                 count = 3
+            elif task_class == "bulk-read" and (contains_any(lowered, BROAD_INVESTIGATION_CUES) or len(dimensions) >= 2):
+                count = max(3, min(6, len(dimensions) + 1))
             elif "parallel" in lowered or "multiple" in lowered or "fan out" in lowered:
                 count = 3
-    units = [f"work_unit_{i}" for i in range(1, count + 1)]
+    if dimensions and count > 1:
+        units = dimensions[:count]
+        while len(units) < count:
+            units.append(f"research_work_unit_{len(units) + 1}")
+    else:
+        units = [f"work_unit_{i}" for i in range(1, count + 1)]
     guardrails: list[str] = []
     guardrails.append("hard_gates_prechecked")
     guardrails.append("provider_readiness_prechecked")
+    if task_class == "bulk-read":
+        guardrails.append("read_only_worker_scope")
     if count == 1:
         guardrails.append("single_worker_enough")
     return count, units, guardrails
@@ -521,11 +617,24 @@ def capsule_for(task_class: str, prompt: str, role: str, delegated: bool) -> dic
     role_name, expertise = role_map.get(task_class, ("Task Specialist", ["Stay within scope", "Return evidence", "Avoid unrelated work"]))
     if "code" in prompt.lower() or role == "worker":
         role_name = "Coding Specialist" if task_class in {"debug", "refactor", "test-gen"} else role_name
+    kind = worker_kind(task_class, role)
+    read_only_scope = [
+        "repo_file_reads",
+        "filesystem_search",
+        "knowledge_base_search_and_file_reads",
+        "web_or_docs_research_when_available",
+        "read_only_ssh_diagnostics_when_explicitly_scoped",
+        "read_only_database_queries_when_configured",
+    ]
+    execution_scope = ["assigned_file_edits", "targeted_tests", "build_or_lint_checks", "bounded_shell_commands"]
     return {
         "role_name": role_name,
+        "worker_type": kind,
         "expertise": expertise,
         "task_scope": "bounded delegated work unit",
         "allowed_actions": ["read", "edit", "test", "analyze"] if role == "worker" else ["read", "analyze"],
+        "read_only_tool_scope": read_only_scope if kind == "research_worker" else [],
+        "execution_tool_scope": execution_scope if kind == "execution_worker" else [],
         "forbidden_actions": ["mcp_private_tools", "secrets", "git_state_changes", "destructive_actions", "callbacks_voice_notifications", "final_synthesis", "automatic_memory_loading"],
         "output_contract": {"format": "markdown_or_json", "required_fields": ["summary", "evidence", "risks_or_uncertainties"]},
         "return_only_to_main_session": True,
@@ -572,6 +681,59 @@ def validator_for(provider: str, task_class: str, role: str, delegated: bool, ef
         "required": required,
         "provider": "codex_or_main_session" if provider == "MiniMax" else "main_session_or_independent_adapter" if required else None,
         "packet": packet,
+    }
+
+
+def dispatch_contract(
+    delegated: bool,
+    provider: str,
+    selector: str,
+    effort: str,
+    role: str,
+    task_class: str,
+    planned_workers: int,
+    units: list[str],
+    provider_warnings: list[str],
+) -> dict[str, Any]:
+    if not delegated:
+        blocked = bool(provider_warnings and provider == "main-session" and task_class != "small-edit")
+        return {
+            "required": blocked,
+            "status": "fanout_blocked" if blocked else "not_required",
+            "main_session_policy": "report_block" if blocked else "handle_directly",
+            "worker_type": "main_session",
+            "launch_before_main_research": False,
+            "main_session_may_duplicate_worker_research": False,
+            "provider": provider,
+            "model_selector": selector,
+            "runtime_launch": runtime_launch(provider, selector, effort),
+            "planned_workers": 0,
+            "work_units": [],
+            "fallback_allowed": not blocked,
+            "block_reason": "; ".join(provider_warnings) if blocked else None,
+            "forbidden_main_session_actions_until_workers_return": [],
+        }
+    return {
+        "required": True,
+        "status": "launch_required",
+        "main_session_policy": "coordinate_wait_integrate",
+        "worker_type": worker_kind(task_class, role),
+        "launch_before_main_research": True,
+        "main_session_may_duplicate_worker_research": False,
+        "provider": provider,
+        "model_selector": selector,
+        "runtime_launch": runtime_launch(provider, selector, effort),
+        "planned_workers": planned_workers,
+        "work_units": units,
+        "fallback_allowed": False,
+        "block_reason": None,
+        "forbidden_main_session_actions_until_workers_return": [
+            "substantive_research",
+            "ssh_diagnostics",
+            "filesystem_sweeps",
+            "repo_wide_search",
+            "parallel_duplicate_analysis",
+        ],
     }
 
 
@@ -645,12 +807,15 @@ def route(
     task_prompt = remaining_prompt if command["type"] != "invalid" else prompt
     task_class = classify(task_prompt)
     gates = hard_gates(task_prompt, task_class)
-    delegated = should_delegate(task_class, task_prompt, gates)
+    delegation_wanted = should_delegate(task_class, task_prompt, gates)
     effort = reasoning_effort(task_class, task_prompt, next_state)
-    role = role_for(task_class, task_prompt) if delegated else "main"
-    provider, selector, provider_warnings = choose_provider(task_prompt, next_state, task_class, effort, delegated)
+    role = role_for(task_class, task_prompt) if delegation_wanted else "main"
+    provider, selector, provider_warnings = choose_provider(task_prompt, next_state, task_class, effort, delegation_wanted)
     warnings.extend(provider_warnings)
+    fanout_blocked = False
+    delegated = delegation_wanted
     if provider == "main-session":
+        fanout_blocked = delegation_wanted and bool(provider_warnings)
         delegated = False
         role = "main"
     planned_workers, units, guardrails = estimate_work_units(task_prompt, task_class, delegated)
@@ -675,6 +840,7 @@ def route(
                 "provider": provider,
                 "model_selector": selector,
                 "reasoning_effort": effort,
+                "runtime_launch": runtime_launch(provider, selector, effort),
             },
         },
         "orchestration_useful": delegated,
@@ -696,7 +862,9 @@ def route(
             "rationale": "automatic decomposition estimate" if delegated else "main_session_only",
             "guardrails_applied": guardrails,
             "fallback_reason": "; ".join(provider_warnings) if provider_warnings and not delegated else None,
+            "blocked": fanout_blocked,
         },
+        "dispatch": dispatch_contract(delegated, provider, selector, effort, role, task_class, planned_workers, units, provider_warnings),
         "circuit_breaker": breaker,
         "warnings": warnings,
         "main_session_responsibilities": ["MCP/private tools", "secrets", "git state changes", "destructive actions", "final synthesis"],
@@ -715,6 +883,8 @@ def main() -> None:
     parser.add_argument("--needs-separate-confirmation", action="store_true", help="Pending plan needs separate destructive/production/secret/git confirmation")
     args = parser.parse_args()
     text = " ".join(args.prompt).strip()
+    if not text and not sys.stdin.isatty():
+        text = sys.stdin.read().strip()
     if args.sanitize:
         print(json.dumps(sanitize_prompt(text), indent=2))
         return

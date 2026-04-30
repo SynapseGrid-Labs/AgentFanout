@@ -24,6 +24,9 @@ Use an explorer for read-only work:
 - codebase questions
 - evidence gathering
 - module review
+- broad investigation before main-session research
+- knowledge-base/file/search-heavy research
+- read-only host/service diagnostics when explicitly scoped
 - design critique
 - security review without edits
 - validation of claims or diffs
@@ -31,11 +34,13 @@ Use an explorer for read-only work:
 Explorer constraints:
 
 - no writes
-- no MCP
+- no private-account side effects
 - no secrets
 - no git state changes
 - bounded scope
 - return evidence and uncertainties
+
+Allowed read-only retrieval scope, when assigned by the host, includes repo/file reads, filesystem search, runtime-approved knowledge-base retrieval, public web/docs research, read-only SSH diagnostics, and read-only database queries where configured.
 
 ## Worker
 
