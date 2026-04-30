@@ -200,8 +200,8 @@
     }
   },
   {
-    "name": "ram memory usage investigation routes to minimax research worker",
-    "prompt": "I want you to research what is going on with minion and why its memory usage is so large. you are on lila .239 minion is on .233. ssh minion for access. agentfanout minimax",
+    "name": "host memory usage investigation routes to minimax research worker",
+    "prompt": "I want you to research what is going on with the staging host and why its memory usage is so large. use read-only diagnostics for access. agentfanout minimax",
     "state_json": {"provider_mode": "Auto", "effort_mode": "Auto", "fanout_policy": "automatic_guarded", "state_scope": "conversation_only"},
     "expect": {
       "route.task_class": "bulk-read",
@@ -350,8 +350,8 @@
     }
   },
   {
-    "name": "failed tmux minion investigation requires worker-first fanout",
-    "prompt": "I need you to fully investigate minion .233. We ran some comfyui over there days ago and I feel like we have a lot of stale processes that need shut down. full investigation agentfanout minimax",
+    "name": "failed remote host investigation requires worker-first fanout",
+    "prompt": "I need you to fully investigate the staging host. We ran a demo application there days ago and I feel like we have a lot of stale processes that need shut down. full investigation agentfanout minimax",
     "state_json": {"provider_mode": "Auto", "effort_mode": "Auto", "fanout_policy": "automatic_guarded", "state_scope": "conversation_only"},
     "expect": {
       "route.task_class": "bulk-read",
@@ -372,8 +372,8 @@
     }
   },
   {
-    "name": "failed tmux forman telegram investigation does not small-edit",
-    "prompt": "Investigate how Telegram communicates with Forman/Foreman, whether Telegram controllers are inside Forman, and whether Aaron's CMUX path exists; use MiniMax as a read-only second-opinion validator.",
+    "name": "integration path investigation does not small-edit",
+    "prompt": "Investigate how the notification integration communicates with the workflow service, whether notification controllers are inside that service, and whether the integration path exists; use MiniMax as a read-only second-opinion validator.",
     "state_json": {"provider_mode": "Auto", "effort_mode": "Auto", "fanout_policy": "automatic_guarded", "state_scope": "conversation_only"},
     "expect": {
       "route.task_class": "bulk-read",
@@ -453,6 +453,26 @@
     "expect": {
       "approved_plan_should_execute": false,
       "reason": "plan_stale"
+    }
+  },
+  {
+    "name": "planning prompt keeps plan precedence over broad research words",
+    "prompt": "plan how to migrate the architecture safely",
+    "state_json": {"provider_mode": "MiniMax", "effort_mode": "Auto", "fanout_policy": "automatic_guarded", "state_scope": "conversation_only"},
+    "expect": {
+      "route.task_class": "plan",
+      "route.executor.reasoning_effort": "high",
+      "route.executor.provider": "MiniMax"
+    }
+  },
+  {
+    "name": "reasoning prompt keeps reason precedence over investigation words",
+    "prompt": "reason about correctness and prove the invariant before implementation",
+    "state_json": {"provider_mode": "MiniMax", "effort_mode": "Auto", "fanout_policy": "automatic_guarded", "state_scope": "conversation_only"},
+    "expect": {
+      "route.task_class": "reason",
+      "route.executor.reasoning_effort": "high",
+      "route.executor.provider": "MiniMax"
     }
   },
   {

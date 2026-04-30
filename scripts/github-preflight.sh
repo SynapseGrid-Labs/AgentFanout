@@ -67,7 +67,7 @@ grep_gate "Private key material" "-----BEGIN (RSA |EC |OPENSSH |DSA )?PRIVATE KE
 grep_gate "Common token prefixes" "(ghp_[A-Za-z0-9_]{20,}|github_pat_[A-Za-z0-9_]{20,}|AKIA[0-9A-Z]{16}|AIza[0-9A-Za-z_-]{20,}|sk-[A-Za-z0-9]{20,})"
 grep_gate "Bearer tokens" "Bearer [A-Za-z0-9._-]{30,}"
 grep_gate "Inline DSNs with passwords" "postgresql://[^:/\$[:space:]]+:[^@\$[:space:]]+@[^/\$[:space:]]+"
-grep_gate "Local infrastructure paths" "(/home/minion|/srv/tools|192\\.168\\.|gitea-minion|OpsVault)"
+grep_gate "Local infrastructure references" "(/home/[A-Za-z0-9_-]+|/srv/[A-Za-z0-9_-]+|192\\.168\\.|10\\.[0-9]+\\.|172\\.(1[6-9]|2[0-9]|3[0-1])\\.|ssh [A-Za-z0-9_.-]+|\\s\\.[0-9]{2,3}\\b)"
 
 large_file_gate
 

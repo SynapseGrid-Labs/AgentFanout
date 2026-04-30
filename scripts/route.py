@@ -52,8 +52,8 @@ ORCH_TRIGGERS = [
 ]
 INVESTIGATION_CUES = [
     "investigate", "full investigation", "research", "find", "search", "look up",
-    "trace", "prove", "proof", "where", "whether", "exists", "how", "what is",
-    "current state", "stale process", "stale processes", "running process",
+    "trace", "where", "whether", "exists", "current state",
+    "stale process", "stale processes", "running process",
     "service", "services", "host", "controller", "controllers", "path", "repo",
 ]
 BROAD_INVESTIGATION_CUES = [
@@ -286,14 +286,14 @@ def classify(prompt: str) -> str:
         return "bulk-classify"
     if "csv" in p or "json" in p or "etl" in p or "schema" in p or "reshape" in p or "parse" in p:
         return "data-xform"
-    if contains_any(p, INVESTIGATION_CUES):
-        return "bulk-read"
-    if "logs" in p or "summarize" in p or "grep" in p or "review these" in p or "modules" in p:
-        return "bulk-read"
     if "architecture" in p or "migration" in p or "design" in p or "strategy" in p or "spec" in p or "plan" in p:
         return "plan"
     if "prove" in p or "correctness" in p or "argument" in p or "reason" in p:
         return "reason"
+    if contains_any(p, INVESTIGATION_CUES):
+        return "bulk-read"
+    if "logs" in p or "summarize" in p or "grep" in p or "review these" in p or "modules" in p:
+        return "bulk-read"
     if "copy" in p or "marketing" in p or "creative" in p or "draft" in p:
         return "creative"
     return "bulk-read" if contains_any(p, ORCH_TRIGGERS) else "small-edit"
@@ -543,11 +543,11 @@ def investigation_dimensions(prompt: str) -> list[str]:
     dimensions: list[str] = []
     if contains_any(lowered, ["knowledge base", "prior", "history", "incident", "document", "docs"]):
         dimensions.append("knowledge_base_context")
-    if contains_any(lowered, ["host", "minion", ".233", "lila", "server", "machine", "ssh"]):
+    if contains_any(lowered, ["host", "server", "machine", "ssh", "node", "instance"]):
         dimensions.append("live_host_state")
-    if contains_any(lowered, ["process", "processes", "service", "services", "comfyui", "gpu", "port", "docker", "ram", "swap", "memory usage"]):
+    if contains_any(lowered, ["process", "processes", "service", "services", "application", "gpu", "port", "docker", "ram", "swap", "memory usage"]):
         dimensions.append("process_service_state")
-    if contains_any(lowered, ["repo", "code", "controller", "controllers", "path", "forman", "foreman", "cmux", "telegram"]):
+    if contains_any(lowered, ["repo", "code", "controller", "controllers", "path", "module", "component", "integration"]):
         dimensions.append("repo_code_path_trace")
     if contains_any(lowered, ["whether", "exists", "prove", "proof", "verify", "cross-check", "validate"]):
         dimensions.append("independent_validation")
