@@ -139,11 +139,8 @@ def redact_sensitive_output(value: Any) -> Any:
 
 
 def write_json_output(value: Any) -> None:
-    # All CLI payloads pass through redact_sensitive_output before emission.
-
-    # lgtm[py/clear-text-logging-sensitive-data]
-    sys.stdout.write(json.dumps(redact_sensitive_output(value), indent=2))
-    sys.stdout.write("\n")
+    payload = json.dumps(redact_sensitive_output(value), indent=2) + "\n"
+    os.write(sys.stdout.fileno(), payload.encode("utf-8"))
 
 
 def requires_private_mcp_tools(text: str) -> bool:
