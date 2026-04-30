@@ -3,3 +3,5 @@
 AgentFanout is created and maintained by [Trent Doney](https://github.com/trentdoney) at SynapseGrid Labs.
 
 Contributors are recognized through GitHub's commit and co-author attribution on merged pull requests.
+
+Maintainer commits should use a GitHub-linked author email so contribution attribution remains accurate.
