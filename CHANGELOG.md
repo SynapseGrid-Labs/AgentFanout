@@ -2,6 +2,19 @@
 
 All notable changes to AgentFanout will be documented in this file.
 
+## v0.1.1 - 2026-04-30
+
+### Changed
+
+- Hardened router CLI output so credential-shaped values are redacted before emission.
+- Added explicit least-privilege workflow permissions.
+- Tightened public release metadata, contributor attribution, and repository security posture.
+
+### Security
+
+- Added regression coverage for secret-output redaction.
+- Verified main branch CI, code scanning, and public-readiness checks before release.
+
 ## v0.1.0 - 2026-04-29
 
 ### Added

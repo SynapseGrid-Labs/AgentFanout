@@ -12,7 +12,7 @@ Security reports should focus on:
 
 ## Reporting
 
-Open a private security advisory on GitHub if available. If advisories are unavailable, open a minimal issue that describes the impact without including secrets, credentials, private infrastructure details, or exploit payloads that would cause harm if copied.
+Use the repository security advisory flow when GitHub private vulnerability reporting is available. If private reporting is unavailable, open a minimal public issue that describes only the affected area and impact. Do not include secrets, credentials, private infrastructure details, proof-of-concept exploit payloads, or steps that would cause harm if copied.
 
 ## Public Release Gate
 
