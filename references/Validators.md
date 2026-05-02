@@ -2,6 +2,10 @@
 
 Validators are bounded reviewers, not second workers.
 
+Provider-primary mode uses validation to offload work, not to pull full context
+back into the main session. The main session receives compact evidence and only
+does deep review when escalation triggers.
+
 ## Universal validator checklist
 
 - Missing requirements
@@ -19,14 +23,53 @@ Validators are bounded reviewers, not second workers.
 
 | Worker/result type | Validator route |
 |---|---|
-| MiniMax worker | Codex/current-balanced validator when available; otherwise independent MiniMax validator with strict checklist |
-| Claude worker | Current/Codex validator if cross-provider validation is available; otherwise separate Claude validator |
-| Codex worker edits | Explorer validator or main-session test/check pass |
-| Local model output | Current-balanced or provider-native validator before final use |
+| Provider-primary MiniMax worker | Deterministic structural validation, then independent MiniMax same-provider adversarial validator |
+| Provider-primary Claude worker | Deterministic structural validation, then separate Claude same-provider adversarial validator |
+| Provider-primary Codex worker edits | Deterministic structural validation, then separate Codex same-provider adversarial validator |
+| Provider-primary Local model output | Deterministic structural validation, then provider-native validator only when live capability/eval checks pass |
+| Automatic cheap/external worker | Independent validator when cheap enough; otherwise compact main-session review |
 | High-risk plan | Frontier/balanced critique plus main-session decision |
 | Security-sensitive review | High-capability read-only security validator; main session final risk call |
 | Multi-file refactor | Diff validator plus tests in main session if available |
 | Bulk classification | Sample validator plus spot checks of edge cases |
+
+Cross-provider validation is an escalation path in provider-primary mode, not the
+default. Use it when structural validation fails twice, evidence is missing,
+provider and validator disagree, risk exceeds provider capability, or the worker
+touches a hard-gated domain.
+
+## Structural validation
+
+Run deterministic structural checks before LLM validation:
+
+```yaml
+schema: StructuralValidationResultV1
+checks:
+  - scope_compliance
+  - file_allowlist_compliance
+  - forbidden_tool_requests_absent
+  - test_or_build_evidence_present_when_applicable
+  - transcript_or_artifact_refs_present
+  - claims_have_evidence_refs
+block_on_fail: true
+```
+
+## Compact result packet
+
+Provider-primary workers must return:
+
+```yaml
+schema: CompactResultPacketV1
+required_fields:
+  - summary
+  - changed_files_or_evidence_refs
+  - commands
+  - exit_codes
+  - structural_validation_result
+  - provider_validator_result
+  - unresolved_risks
+  - escalation_recommendation
+```
 
 ## Prompt template
 

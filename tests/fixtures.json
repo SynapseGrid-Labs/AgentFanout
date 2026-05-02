@@ -24,7 +24,17 @@
     "name": "set minimax",
     "prompt": "AgentFanout MiniMax",
     "expect": {
-      "command.type": "set_provider",
+      "command.type": "provider_task",
+      "command.args.lifecycle": "current_task",
+      "next_state.provider_mode": "Auto"
+    }
+  },
+  {
+    "name": "set minimax persistent mode",
+    "prompt": "AgentFanout MiniMax Mode",
+    "expect": {
+      "command.type": "set_provider_mode",
+      "command.args.lifecycle": "persistent_conversation_mode",
       "next_state.provider_mode": "MiniMax"
     }
   },
@@ -91,6 +101,12 @@
     "expect": {
       "route.worth_delegating": true,
       "route.executor.provider": "MiniMax",
+      "orchestration_style": "provider_primary",
+      "validator.provider": "MiniMax:same_provider_adversarial",
+      "provider_primary.active": true,
+      "provider_primary.codex_review_scope": "CompactResultPacketV1_only_unless_escalated",
+      "structural_validation.required": true,
+      "compact_result_contract.schema": "CompactResultPacketV1",
       "orchestration_useful": true,
       "fanout.planned_workers": 20,
       "worker_capsule.role_name": "Research Analyst",
@@ -99,6 +115,57 @@
     },
     "expect_contains": {
       "references_to_load": "references/AgentCapsules.md"
+    }
+  },
+  {
+    "name": "one task minimax provider primary does not persist",
+    "prompt": "AgentFanout MiniMax\nreview three independent modules",
+    "expect": {
+      "command.type": "provider_task",
+      "command.args.lifecycle": "current_task",
+      "next_state.provider_mode": "Auto",
+      "route.worth_delegating": true,
+      "route.executor.provider": "MiniMax",
+      "orchestration_style": "provider_primary",
+      "validator.provider": "MiniMax:same_provider_adversarial",
+      "provider_primary_packet.schema": "ProviderPrimaryPacketV1",
+      "route.executor.tool_envelope.output_contract": "CompactResultPacketV1",
+      "route.executor.tool_envelope.structural_validation_required": true,
+      "route.executor.tool_envelope.same_provider_validator_required": true
+    }
+  },
+  {
+    "name": "local provider primary requires live capability checks",
+    "prompt": "AgentFanout Local\nreview three independent modules",
+    "env": {"AGENT_FANOUT_LOCAL_AVAILABLE": "1"},
+    "expect": {
+      "command.type": "provider_task",
+      "next_state.provider_mode": "Auto",
+      "route.worth_delegating": false,
+      "selected_provider": "main-session",
+      "fanout.blocked": true
+    },
+    "expect_contains": {
+      "warnings": "provider_unavailable:local:live_capability_check_missing"
+    }
+  },
+  {
+    "name": "local provider primary passes with verified live capability",
+    "prompt": "AgentFanout Local\nreview three independent modules",
+    "env": {
+      "AGENT_FANOUT_LOCAL_AVAILABLE": "1",
+      "AGENT_FANOUT_LOCAL_LIVE_CHECKS": "1",
+      "AGENT_FANOUT_LOCAL_CAPABILITY_VERIFIED": "1",
+      "AGENT_FANOUT_LOCAL_ACTIVE_MODE": "think",
+      "AGENT_FANOUT_LOCAL_MODEL_ID": "gpt-oss-120b-heretic"
+    },
+    "expect": {
+      "route.worth_delegating": true,
+      "route.executor.provider": "Local",
+      "orchestration_style": "provider_primary",
+      "provider_capability_snapshot.validation_eligible": true,
+      "provider_capability_snapshot.loaded_model_id": "gpt-oss-120b-heretic",
+      "validator.provider": "Local:same_provider_adversarial"
     }
   },
   {
@@ -495,6 +562,36 @@
     "expect_contains": {
       "warnings": "circuit_breaker_triggered",
       "fanout.guardrails_applied": "circuit_breaker_stopped_new_launches"
+    }
+  },
+  {
+    "name": "minimax tool agent envelope emitted for research",
+    "prompt": "AgentFanout MiniMax\nfully investigate service state with OpsVault and repo search",
+    "env": {"AGENT_FANOUT_MINIMAX_TOOL_AGENT": "1"},
+    "expect": {
+      "route.executor.provider": "MiniMax",
+      "route.executor.runtime_launch.minimax_tool_agent.stdin_request": true,
+      "route.executor.runtime_launch.minimax_tool_agent.required_flag": "AGENT_FANOUT_MINIMAX_TOOL_AGENT=1",
+      "tool_envelope.version": 1,
+      "tool_envelope.mode": "research_worker",
+      "tool_envelope.opsvault.enabled": true
+    },
+    "expect_contains": {
+      "tool_envelope.tools": "repo_search"
+    }
+  },
+  {
+    "name": "minimax tool work blocks when tool agent disabled",
+    "prompt": "AgentFanout MiniMax\nfully investigate service state with OpsVault and repo search",
+    "env": {"AGENT_FANOUT_MINIMAX_TOOL_AGENT": "0"},
+    "expect": {
+      "route.executor.provider": "main-session",
+      "route.worth_delegating": false,
+      "dispatch.status": "fanout_blocked",
+      "dispatch.fallback_allowed": false
+    },
+    "expect_contains": {
+      "warnings": "fanout_blocked:minimax_tool_agent_disabled"
     }
   }
 ]
