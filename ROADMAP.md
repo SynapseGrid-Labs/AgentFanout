@@ -1,6 +1,6 @@
 # Roadmap
 
-AgentFanout is intentionally small in `v0.1.0`: a portable skill/policy layer plus deterministic advisory router.
+AgentFanout is intentionally small in `v0.1.1`: a portable skill/policy layer plus deterministic advisory router.
 
 ## Near Term
 

@@ -8,13 +8,15 @@
 
 AgentFanout is a provider-agnostic orchestration skill and advisory router for safe multi-agent work. It keeps the main session in charge of safety, private tools, git state, destructive actions, and final synthesis while allowing host runtimes to use bounded workers and validators when fanout is worth the overhead.
 
+Canonical project page: [synapsegridlabs.com/agentfanout](https://synapsegridlabs.com/agentfanout/)
+
 ![AgentFanout orchestration architecture](assets/readme/agentfanout-orchestrator.jpg)
 
 The diagrams show the intended orchestration flow. Worker launch is performed by the host runtime; AgentFanout provides routing policy, task packets, safety gates, and validation rules.
 
 ## Current Status
 
-AgentFanout is `v0.1.0`. It is a portable skill/policy layer and deterministic advisory router, not a standalone dispatch harness. It is designed to be embedded into agent runtimes that already have a worker mechanism, such as Codex subagents, Claude agents, MiniMax wrappers, local LLM runners, or future provider adapters.
+AgentFanout is `v0.1.1`. It is a portable skill/policy layer and deterministic advisory router, not a standalone dispatch harness. It is designed to be embedded into agent runtimes that already have a worker mechanism, such as Codex subagents, Claude agents, MiniMax wrappers, local LLM runners, or future provider adapters.
 
 ## Public Release Gate
 
@@ -30,8 +32,13 @@ AgentFanout is public-facing. Maintainer-originated GitHub-facing changes are tr
 - [Quickstart](#quickstart)
 - [Deterministic Router](#deterministic-router)
 - [Safety Model](#safety-model)
+- [Support and Contact](#support-and-contact)
 - [Release Process](docs/release-process.md)
 - [FAQ](#faq)
+
+## What Is AgentFanout?
+
+AgentFanout is a safe multi-agent routing layer for host runtimes. It classifies work, applies hard safety gates, shapes compact worker packets, recommends provider routing, and requires validation when fanout is useful. AgentFanout does not launch workers by itself; the host runtime remains responsible for execution.
 
 ## Execution Model
 
@@ -165,6 +172,16 @@ Suspicious credential-shaped prompts remain main-session-only even when they do 
 Workers receive only bounded task packets. They must return results to the main session and must not contact notification hooks, voice systems, webhooks, or callback URLs.
 
 Read-only research workers may use scoped read-only retrieval and diagnostics when assigned by the host: repo/file reads, filesystem search, runtime-approved knowledge-base retrieval, public web or docs research, read-only SSH diagnostics, and read-only database queries where configured. That read-only scope does not include private-account side effects, secrets, git mutations, destructive actions, or final synthesis.
+
+## Support and Contact
+
+- Project page: [synapsegridlabs.com/agentfanout](https://synapsegridlabs.com/agentfanout/)
+- Contact page: [synapsegridlabs.com/contact](https://synapsegridlabs.com/contact/)
+- Usage questions, documentation gaps, routing bugs, and adapter suggestions: [GitHub Issues](https://github.com/SynapseGrid-Labs/AgentFanout/issues)
+- Support policy: [SUPPORT.md](SUPPORT.md)
+- Security reporting: [SECURITY.md](SECURITY.md)
+
+Do not post secrets, credentials, private infrastructure details, or harmful exploit payloads in public issues.
 
 ## Commands
 
