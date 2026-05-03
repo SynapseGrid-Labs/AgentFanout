@@ -23,6 +23,7 @@ def run_route(case):
     cmd = [sys.executable, "-S", str(ROUTE), case["prompt"]]
     env = os.environ.copy()
     env.setdefault("AGENT_FANOUT_MINIMAX_AVAILABLE", "1")
+    env.setdefault("AGENT_FANOUT_MINIMAX_TOOL_AGENT", "1")
     env.setdefault("AGENT_FANOUT_CODEX_SUBAGENTS", "1")
     for name in case.get("unset_env", []):
         env.pop(name, None)

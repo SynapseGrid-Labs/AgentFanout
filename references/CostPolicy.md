@@ -26,7 +26,7 @@ Use model selectors, not hardcoded model names. Provider adapters resolve select
 3. **Cheapest capable path**: for simple independent tasks, use `local-worker`, then `current-fast-mini`, then low-cost external worker.
 4. **Balanced path**: for ordinary debugging, test generation, and data transformations, use `current-balanced`, `local-coder`, `claude-balanced`, or `minimax-latest` depending on preference and gates.
 5. **Frontier path**: reserve `current-frontier`, `claude-frontier`, or high-effort current runtime for high-risk design, correctness, or security.
-6. **Validator pairing**: use a validator at least as capable as the worker for high-risk outputs; for cheap/external workers, prefer an independent provider if available.
+6. **Validator pairing**: in provider-primary mode, prefer deterministic structural validation plus same-provider adversarial validation before spending main-session or cross-provider tokens. Use cross-provider validation only on escalation triggers.
 7. **Reasoning effort is separate**: choose model selector and reasoning effort independently. A balanced model with high effort may be cheaper than a frontier model for bounded reasoning.
 
 MiniMax note: do not choose `minimax-fast` by default. The local MiniMax wrapper maps fast mode to `MiniMax-M2.7-highspeed`, which may be unsupported by the current token plan. Use `minimax-latest` unless highspeed support has been explicitly verified.
@@ -39,4 +39,4 @@ Use parallelism when subtasks are independent and outputs can be merged. Use ser
 
 ## Provider-native subagent vs subprocess worker
 
-Prefer provider-native subagents when the runtime supports scoped tools, clean permissions, and result capture. Use subprocess/API workers for providers that expose only API/CLI access. In both cases, the main session owns prompt sanitation, scope, validation, and integration.
+Prefer provider-native subagents when the runtime supports scoped tools, clean permissions, and result capture. Use subprocess/API workers for providers that expose only API/CLI access. In both cases, the main session owns prompt sanitation, scope, compact final review, and integration. Deep main-session validation is reserved for escalation triggers.

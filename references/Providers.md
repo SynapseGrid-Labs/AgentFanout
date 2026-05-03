@@ -21,6 +21,22 @@ interface ProviderAdapter {
 }
 ```
 
+Provider-primary routing requires a capability snapshot before launch:
+
+```yaml
+provider: <provider>
+model_selector: <selector>
+available_tools: []
+supports_file_editing: true|false
+validation_eligible: true|false
+snapshot_source: <live_check|adapter_env|runtime>
+fallback_reason: <reason|null>
+```
+
+If a requested provider cannot produce the required capability snapshot, route
+output must report `fanout_blocked` instead of silently shifting the work back to
+the main session.
+
 ## Normalized task object
 
 ```yaml
@@ -53,6 +69,10 @@ verification: []
 errors: []
 raw_output_ref: <optional local reference>
 ```
+
+Provider-primary results must additionally provide `CompactResultPacketV1` so
+the orchestrator can review compact evidence instead of reopening the full
+worker context.
 
 ## Adapter files
 

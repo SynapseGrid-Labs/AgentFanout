@@ -2,6 +2,27 @@
 
 Validators run after a worker returns output. A validator must inspect a bounded target, not redo the whole task.
 
+In provider-primary mode, validation stays provider-side first. The main session
+does a compact final review and escalates only when structural or provider-side
+validation cannot support the result.
+
+## Structural validation first
+
+Before LLM validation, check:
+
+```yaml
+schema: StructuralValidationResultV1
+scope_compliance: pass|fail
+file_allowlist_compliance: pass|fail
+forbidden_tool_requests_absent: pass|fail
+test_or_build_evidence_present_when_applicable: pass|fail
+transcript_or_artifact_refs_present: pass|fail
+claims_have_evidence_refs: pass|fail
+```
+
+If this fails twice for the same task packet, stop same-provider repair and
+escalate to the main session.
+
 ## Validator input package
 
 Provide:
@@ -23,6 +44,20 @@ expected_output:
   - pass/fail/concerns
   - material findings only
   - recommended orchestrator action
+```
+
+Provider-primary validators must also preserve the compact packet:
+
+```yaml
+schema: CompactResultPacketV1
+summary: <what changed or was found>
+changed_files_or_evidence_refs: []
+commands: []
+exit_codes: []
+structural_validation_result: <StructuralValidationResultV1>
+provider_validator_result: <validator result>
+unresolved_risks: []
+escalation_recommendation: accept|repair|cross-provider-validation|main-session-review
 ```
 
 ## Validator output format

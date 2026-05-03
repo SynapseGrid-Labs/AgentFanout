@@ -30,16 +30,20 @@ VALID_COMMANDS = [
     "AgentFanout Status",
     "AgentFanout Help",
     "AgentFanout MiniMax",
+    "AgentFanout MiniMax Mode",
     "AgentFanout Local",
+    "AgentFanout Local Mode",
     "AgentFanout Codex",
+    "AgentFanout Codex Mode",
     "AgentFanout Claude",
+    "AgentFanout Claude Mode",
     "AgentFanout HIGH",
     "AgentFanout Auto",
     "AgentFanout Clear",
     "AgentFanout Reset",
 ]
 
-COMMAND_LINE = re.compile(r"^AgentFanout(?:\s+([A-Za-z]+))?\s*$", re.IGNORECASE)
+COMMAND_LINE = re.compile(r"^AgentFanout(?:\s+([A-Za-z]+)(?:\s+([A-Za-z]+))?)?\s*$", re.IGNORECASE)
 COMMAND_PREFIX = re.compile(r"^AgentFanout\b", re.IGNORECASE)
 
 ORCH_TRIGGERS = [
@@ -248,7 +252,9 @@ def extract_command(prompt: str, state: dict[str, Any]) -> tuple[dict[str, Any],
         return command, next_state, prompt, warnings
 
     word = match.group(1)
+    modifier = match.group(2)
     normalized = word.lower()
+    normalized_modifier = modifier.lower() if modifier else None
     remaining = "\n".join(line for i, line in enumerate(lines) if i != index).strip()
 
     if normalized == "status":
@@ -257,8 +263,21 @@ def extract_command(prompt: str, state: dict[str, Any]) -> tuple[dict[str, Any],
         return command_template("help", "AgentFanout Help"), next_state, remaining, warnings
     if normalized in {"minimax", "local", "codex", "claude"}:
         provider = canonical_provider(normalized)
-        next_state["provider_mode"] = provider
-        return command_template("set_provider", f"AgentFanout {provider}"), next_state, remaining, warnings
+        if normalized_modifier == "mode":
+            next_state["provider_mode"] = provider
+            command = command_template("set_provider_mode", f"AgentFanout {provider} Mode")
+            command["args"]["provider"] = provider
+            command["args"]["lifecycle"] = "persistent_conversation_mode"
+            return command, next_state, remaining, warnings
+        if normalized_modifier:
+            command = command_template("invalid")
+            command["error"] = f"unknown_command_modifier:{modifier}"
+            warnings.append("invalid_command")
+            return command, next_state, prompt, warnings
+        command = command_template("provider_task", f"AgentFanout {provider}")
+        command["args"]["provider"] = provider
+        command["args"]["lifecycle"] = "current_task"
+        return command, next_state, remaining, warnings
     if normalized == "high":
         next_state["effort_mode"] = "High"
         return command_template("set_effort", "AgentFanout HIGH"), next_state, remaining, warnings
@@ -459,6 +478,10 @@ def readiness(provider: str, selector: str) -> tuple[bool, list[str]]:
     if provider == "Local":
         if not env_flag("AGENT_FANOUT_LOCAL_AVAILABLE", "AGENT_ORCH_LOCAL_AVAILABLE"):
             return False, ["provider_unavailable:local:service_reachability_unknown"]
+        if not env_flag("AGENT_FANOUT_LOCAL_LIVE_CHECKS", "AGENT_ORCH_LOCAL_LIVE_CHECKS"):
+            return False, ["provider_unavailable:local:live_capability_check_missing"]
+        if not env_flag("AGENT_FANOUT_LOCAL_CAPABILITY_VERIFIED", "AGENT_ORCH_LOCAL_CAPABILITY_VERIFIED"):
+            return False, ["provider_unavailable:local:capability_not_verified"]
     if provider == "Codex":
         codex_runtime_detected = bool(os.getenv("CODEX_THREAD_ID") or os.getenv("PAI_CODEX_LAUNCH_ID"))
         if not codex_runtime_detected and not env_flag("AGENT_FANOUT_CODEX_SUBAGENTS", "AGENT_ORCH_CODEX_SUBAGENTS"):
@@ -470,6 +493,69 @@ def readiness(provider: str, selector: str) -> tuple[bool, list[str]]:
         warnings.append(f"provider_unavailable:{provider.lower()}:selector_unmapped")
         return False, warnings
     return True, warnings
+
+
+def provider_capability_snapshot(provider: str, selector: str, task_class: str, delegated: bool, effort: str) -> dict[str, Any]:
+    if not delegated or provider == "main-session":
+        return {
+            "provider": "main-session",
+            "model_selector": "main-session",
+            "available_tools": ["main_session_tools"],
+            "supports_file_editing": True,
+            "validation_eligible": True,
+            "snapshot_source": "main_session",
+        }
+    if provider == "MiniMax":
+        tool_agent = minimax_tool_agent_enabled()
+        return {
+            "provider": provider,
+            "model_selector": selector,
+            "available_tools": ["ToolEnvelopeV1"] if tool_agent else [],
+            "supports_file_editing": tool_agent,
+            "validation_eligible": True,
+            "snapshot_source": "agentfanout_env_and_adapter",
+            "tool_runtime": "MiniMaxAgent" if tool_agent else "blocked",
+        }
+    if provider == "Local":
+        return {
+            "provider": provider,
+            "model_selector": selector,
+            "available_tools": [],
+            "supports_file_editing": False,
+            "validation_eligible": env_flag("AGENT_FANOUT_LOCAL_CAPABILITY_VERIFIED", "AGENT_ORCH_LOCAL_CAPABILITY_VERIFIED"),
+            "snapshot_source": "live_check_required",
+            "required_live_checks": ["/v1/models", "/health", "active_lila_mode", "exact_model_id", "context_window", "task_class_eval"],
+            "active_mode": os.getenv("AGENT_FANOUT_LOCAL_ACTIVE_MODE", "unknown"),
+            "loaded_model_id": os.getenv("AGENT_FANOUT_LOCAL_MODEL_ID", "unknown"),
+            "context_window": os.getenv("AGENT_FANOUT_LOCAL_CONTEXT_WINDOW", "unknown"),
+            "capability_expires": os.getenv("AGENT_FANOUT_LOCAL_CAPABILITY_EXPIRES", "short_window_required"),
+        }
+    if provider == "Codex":
+        return {
+            "provider": provider,
+            "model_selector": selector,
+            "available_tools": ["codex_subagent_tools"],
+            "supports_file_editing": True,
+            "validation_eligible": True,
+            "snapshot_source": "codex_runtime_or_env",
+        }
+    if provider == "Claude":
+        return {
+            "provider": provider,
+            "model_selector": selector,
+            "available_tools": ["adapter_configured_tools"],
+            "supports_file_editing": True,
+            "validation_eligible": True,
+            "snapshot_source": "adapter_env",
+        }
+    return {
+        "provider": provider,
+        "model_selector": selector,
+        "available_tools": [],
+        "supports_file_editing": False,
+        "validation_eligible": False,
+        "snapshot_source": "unknown",
+    }
 
 
 def selector_for(provider: str, effort: str, task_class: str) -> str:
@@ -523,9 +609,117 @@ def runtime_launch(provider: str, selector: str, effort: str) -> dict[str, Any]:
             "selector": selector,
             "codex_native": codex_native,
         }
-    return {
+    launch: dict[str, Any] = {
         "provider": provider,
         "selector": selector,
+    }
+    if provider == "MiniMax":
+        launch["minimax_tool_agent"] = {
+            "command": "bun $HOME/.pai/skills/MiniMax/Tools/MiniMaxAgent.ts --request-json - --json",
+            "stdin_request": True,
+            "required_flag": "AGENT_FANOUT_MINIMAX_TOOL_AGENT=1",
+            "text_fallback_command": "bun $HOME/.pai/skills/MiniMax/Tools/MiniMaxExec.ts",
+        }
+    return launch
+
+
+def minimax_tool_agent_enabled() -> bool:
+    return env_flag("AGENT_FANOUT_MINIMAX_TOOL_AGENT")
+
+
+def tool_envelope_for(task_prompt: str, task_class: str, role: str, worker_type_value: str, effort: str, planned_workers: int) -> dict[str, Any] | None:
+    if worker_type_value == "main_session":
+        return None
+    mode = worker_type_value if worker_type_value in {"research_worker", "execution_worker", "validator"} else "research_worker"
+    workdir = os.getcwd()
+    tools_by_mode = {
+        "research_worker": [
+            "opsvault_search",
+            "opsvault_file",
+            "opsvault_stats",
+            "repo_read_file",
+            "repo_list_files",
+            "repo_search",
+            "run_readonly_command",
+        ],
+        "execution_worker": [
+            "opsvault_search",
+            "opsvault_file",
+            "opsvault_stats",
+            "repo_read_file",
+            "repo_list_files",
+            "repo_search",
+            "run_readonly_command",
+            "apply_scoped_patch",
+            "run_verification_command",
+        ],
+        "validator": ["repo_read_file", "repo_list_files", "repo_search", "run_readonly_command", "run_verification_command"],
+    }
+    if role == "explorer":
+        mode = "research_worker"
+    write_files: list[str] = []
+    shell_allowlist = [
+        {
+            "id": "rg-search",
+            "cmd": "rg",
+            "policy": "readonly",
+            "cwd_roots": [workdir],
+            "allowed_args_regex": r"^[A-Za-z0-9_./:=,@%+ -]+$",
+            "timeout_ms": 30000,
+        },
+        {
+            "id": "python-test",
+            "cmd": "python3",
+            "policy": "verification",
+            "cwd_roots": [workdir],
+            "allowed_args_regex": r"^[A-Za-z0-9_./:=,@%+ -]+$",
+            "timeout_ms": 120000,
+        },
+        {
+            "id": "bun-check",
+            "cmd": "bun",
+            "policy": "verification",
+            "cwd_roots": [workdir],
+            "allowed_args_regex": r"^[A-Za-z0-9_./:=,@%+ -]+$",
+            "timeout_ms": 120000,
+        },
+    ]
+    return {
+        "version": 1,
+        "request_id": "agentfanout-minimax",
+        "mode": mode,
+        "workdir": workdir,
+        "prompt": task_prompt,
+        "tools": tools_by_mode[mode],
+        "read_roots": [workdir],
+        "write_files": write_files,
+        "assigned_files": write_files,
+        "shell_allowlist": shell_allowlist,
+        "opsvault": {
+            "enabled": task_class in {"bulk-read", "debug", "plan", "security-review"},
+            "tools": ["search", "file", "stats"],
+            "allowed_sections": ["10_projects", "20_devices", "30_network", "40_runbooks"],
+            "max_results": 10,
+        },
+        "limits": {
+            "max_steps": 20,
+            "max_workers": max(1, min(4, planned_workers or 1)),
+            "max_parallel_tools": 4,
+            "max_file_bytes": 250000,
+            "max_tool_output_bytes": 65536,
+            "max_transcript_bytes": 1048576,
+            "timeout_ms": 300000,
+        },
+        "deny": [
+            "secrets",
+            "private_account_side_effects",
+            "git_state_mutation",
+            "destructive_actions",
+            "deploys",
+            "final_user_synthesis",
+        ],
+        "validator_required": task_class not in {"creative", "bulk-classify"} or effort in {"high", "xhigh"},
+        "output_contract": "worker_result_v1" if mode != "validator" else "validator_result_v1",
     }
 
 
@@ -539,11 +733,13 @@ def auto_provider_candidates(task_class: str, effort: str) -> list[str]:
     return ["Codex", "MiniMax", "Local", "Claude"]
 
 
-def choose_provider(prompt: str, state: dict[str, Any], task_class: str, effort: str, delegated: bool) -> tuple[str, str, list[str]]:
+def choose_provider(prompt: str, state: dict[str, Any], task_class: str, effort: str, delegated: bool, provider_override: str | None = None) -> tuple[str, str, list[str]]:
     if not delegated:
         return "main-session", "main-session", []
     provider_hint, hint_warnings = requested_provider(prompt)
-    if provider_hint:
+    if provider_override:
+        candidates = [provider_override]
+    elif provider_hint:
         candidates = [provider_hint]
     elif state["provider_mode"] != "Auto":
         candidates = [state["provider_mode"]]
@@ -682,7 +878,85 @@ def references_to_load(prompt: str, provider: str, delegated: bool, full_agents:
     return refs
 
 
-def validator_for(provider: str, task_class: str, role: str, delegated: bool, effort: str) -> dict[str, Any]:
+def structural_validation_packet(provider: str, task_class: str, delegated: bool) -> dict[str, Any]:
+    return {
+        "schema": "StructuralValidationResultV1",
+        "required": delegated,
+        "checks": [
+            "scope_compliance",
+            "file_allowlist_compliance",
+            "forbidden_tool_requests_absent",
+            "test_or_build_evidence_present_when_applicable",
+            "transcript_or_artifact_refs_present",
+            "claims_have_evidence_refs",
+        ],
+        "block_on_fail": True,
+        "provider": provider,
+        "task_class": task_class,
+    }
+
+
+def provider_primary_config(provider: str, explicit: bool, delegated: bool) -> dict[str, Any]:
+    active = delegated and provider != "main-session" and explicit
+    return {
+        "active": active,
+        "orchestration_style": "provider_primary" if active else "automatic_guarded",
+        "codex_role": "orchestrator_project_manager_final_compact_reviewer",
+        "provider_role": "execute_structurally_validate_adversarially_validate" if active else "selected_worker",
+        "lifecycle": "current_task_or_provider_mode",
+        "max_provider_repair_loops": 2,
+        "max_same_provider_validator_passes_per_loop": 1,
+        "timeout_ms_per_task_packet": 300000,
+        "codex_review_scope": "CompactResultPacketV1_only_unless_escalated",
+        "escalate_on": [
+            "structural_validation_failed_twice",
+            "missing_evidence",
+            "validator_disagreement",
+            "forbidden_scope_or_tool_request",
+            "provider_timeout",
+            "risk_exceeds_provider_capability",
+        ],
+    }
+
+
+def compact_result_contract(provider: str, delegated: bool) -> dict[str, Any] | None:
+    if not delegated or provider == "main-session":
+        return None
+    return {
+        "schema": "CompactResultPacketV1",
+        "required_fields": [
+            "summary",
+            "changed_files_or_evidence_refs",
+            "commands",
+            "exit_codes",
+            "structural_validation_result",
+            "provider_validator_result",
+            "unresolved_risks",
+            "escalation_recommendation",
+        ],
+        "codex_consumption": "compact_final_review",
+    }
+
+
+def provider_primary_packet(provider: str, selector: str, task_class: str, delegated: bool, capability_snapshot: dict[str, Any]) -> dict[str, Any] | None:
+    if not delegated or provider == "main-session":
+        return None
+    return {
+        "schema": "ProviderPrimaryPacketV1",
+        "provider": provider,
+        "model_selector": selector,
+        "task_class": task_class,
+        "scope": "bounded delegated work unit",
+        "forbidden_scope": ["secrets", "private_mcp_side_effects", "git_state_mutation", "destructive_actions", "final_user_synthesis"],
+        "allowed_tools": capability_snapshot.get("available_tools", []),
+        "write_permissions": "scoped_tool_envelope_only" if capability_snapshot.get("supports_file_editing") else "none",
+        "expected_artifacts": ["worker_result", "structural_validation", "same_provider_validator_result", "compact_result_packet"],
+        "validation_checklist": ["scope_compliance", "evidence_supported_claims", "tests_or_commands_reported", "risks_reported"],
+        "escalation_conditions": provider_primary_config(provider, True, delegated)["escalate_on"],
+    }
+
+
+def validator_for(provider: str, task_class: str, role: str, delegated: bool, effort: str, provider_primary: bool = False) -> dict[str, Any]:
     required = delegated and (provider != "main-session" or role == "worker" or task_class in {"plan", "refactor", "security-review", "reason", "debug", "test-gen"} or effort in {"high", "xhigh"})
     packet = None
     if required:
@@ -690,7 +964,7 @@ def validator_for(provider: str, task_class: str, role: str, delegated: bool, ef
             "validator_id": "validator_1",
             "task_scope": "bounded worker result validation",
             "evidence_refs": [],
-            "checklist": ["safety gates respected", "evidence supports claims", "output contract satisfied"],
+            "checklist": ["structural validation passed", "safety gates respected", "evidence supports claims", "output contract satisfied"],
             "pass_threshold": "all_critical_items_pass",
             "forbidden_actions": ["mcp_private_tools", "secrets", "git_state_changes", "destructive_actions", "callbacks_voice_notifications", "final_synthesis"],
             "output_contract": {
@@ -699,9 +973,19 @@ def validator_for(provider: str, task_class: str, role: str, delegated: bool, ef
             },
             "escalation_target": "main_session",
         }
+    validator_provider = None
+    if required:
+        validator_provider = f"{provider}:same_provider_adversarial" if provider_primary and provider != "main-session" else "main_session_or_independent_adapter"
     return {
         "required": required,
-        "provider": "codex_or_main_session" if provider == "MiniMax" else "main_session_or_independent_adapter" if required else None,
+        "provider": validator_provider,
+        "order": [
+            "deterministic_structural_validation",
+            "same_provider_adversarial_validation",
+            "same_provider_repair_loop",
+            "codex_compact_final_review",
+            "cross_provider_escalation_only_on_failure",
+        ] if provider_primary and required else ["independent_or_main_session_validation"] if required else [],
         "packet": packet,
     }
 
@@ -821,12 +1105,18 @@ def route(
             "status": status_payload(next_state, warnings),
             "hard_gates": hard_gates("", "small-edit"),
             "validator": {"required": False, "provider": None, "packet": None},
+            "provider_primary": provider_primary_config("main-session", False, False),
+            "provider_capability_snapshot": provider_capability_snapshot("main-session", "main-session", "small-edit", False, "low"),
+            "structural_validation": structural_validation_packet("main-session", "small-edit", False),
+            "provider_primary_packet": None,
+            "compact_result_contract": None,
             "fanout": {"policy": "automatic_guarded", "planned_workers": 0, "work_units": [], "rationale": "command_only", "guardrails_applied": ["no_task_to_delegate"], "fallback_reason": None},
             "circuit_breaker": circuit_breaker(worker_failures),
             "warnings": warnings,
         }
 
     task_prompt = remaining_prompt if command["type"] != "invalid" else prompt
+    command_provider_override = command.get("args", {}).get("provider") if command["type"] == "provider_task" else None
     task_class = classify(task_prompt)
     gates = hard_gates(task_prompt, task_class)
     delegation_wanted = should_delegate(task_class, task_prompt, gates)
@@ -840,7 +1130,10 @@ def route(
     if breaker["triggered"]:
         provider, selector, provider_warnings = "main-session", "main-session", ["circuit_breaker_triggered:worker_failure_threshold"]
     else:
-        provider, selector, provider_warnings = choose_provider(task_prompt, next_state, task_class, effort, delegation_wanted)
+        provider, selector, provider_warnings = choose_provider(task_prompt, next_state, task_class, effort, delegation_wanted, command_provider_override)
+    if provider == "MiniMax" and delegation_wanted and not minimax_tool_agent_enabled():
+        provider_warnings.append("fanout_blocked:minimax_tool_agent_disabled")
+        provider, selector = "main-session", "main-session"
     warnings.extend(provider_warnings)
     fanout_blocked = False
     delegated = delegation_wanted
@@ -850,11 +1143,20 @@ def route(
         role = "main"
     planned_workers, units, guardrails = estimate_work_units(task_prompt, task_class, delegated)
     parallelism = "none" if not delegated else "parallel" if planned_workers > 1 else "serial-delegated"
-    validator = validator_for(provider, task_class, role, delegated, effort)
+    prompt_provider_hint, _ = requested_provider(task_prompt)
+    explicit_provider_primary = bool(command_provider_override or command["type"] == "set_provider_mode" or prompt_provider_hint or next_state["provider_mode"] != "Auto")
+    provider_primary = provider_primary_config(provider, explicit_provider_primary, delegated)
+    capability_snapshot = provider_capability_snapshot(provider, selector, task_class, delegated, effort)
+    validator = validator_for(provider, task_class, role, delegated, effort, provider_primary["active"])
     full_agents = agent_composition_required(task_prompt)
     codex_ref = codex_adapter_required(task_prompt, provider) or next_state["provider_mode"] == "Codex" or "codex" in task_prompt.lower()
     refs = references_to_load(task_prompt, provider, delegated, full_agents, codex_ref, pending_plan)
     capsule = capsule_for(task_class, task_prompt, role, delegated)
+    envelope = tool_envelope_for(task_prompt, task_class, role, worker_kind(task_class, role) if delegated else "main_session", effort, planned_workers) if provider == "MiniMax" and delegated else None
+    if envelope and provider_primary["active"]:
+        envelope["output_contract"] = "CompactResultPacketV1"
+        envelope["structural_validation_required"] = True
+        envelope["same_provider_validator_required"] = True
     if breaker["triggered"]:
         fanout_blocked = True
         if "circuit_breaker_stopped_new_launches" not in guardrails:
@@ -872,9 +1174,12 @@ def route(
                 "model_selector": selector,
                 "reasoning_effort": effort,
                 "runtime_launch": runtime_launch(provider, selector, effort),
+                "tool_envelope": envelope,
+                "provider_capability_snapshot": capability_snapshot,
             },
         },
         "orchestration_useful": delegated,
+        "orchestration_style": provider_primary["orchestration_style"],
         "agent_composition_required": full_agents,
         "codex_adapter_required": codex_ref,
         "selected_provider": provider,
@@ -886,8 +1191,14 @@ def route(
         "status": status_payload(next_state, warnings),
         "hard_gates": gates,
         "validator": validator,
+        "provider_primary": provider_primary,
+        "provider_capability_snapshot": capability_snapshot,
+        "structural_validation": structural_validation_packet(provider, task_class, delegated),
+        "provider_primary_packet": provider_primary_packet(provider, selector, task_class, delegated, capability_snapshot),
+        "compact_result_contract": compact_result_contract(provider, delegated),
+        "tool_envelope": envelope,
         "fanout": {
-            "policy": "automatic_guarded",
+            "policy": provider_primary["orchestration_style"],
             "planned_workers": planned_workers,
             "work_units": units,
             "rationale": "automatic decomposition estimate" if delegated else "main_session_only",

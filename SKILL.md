@@ -45,10 +45,14 @@ Valid commands:
 
 - `AgentFanout Status`
 - `AgentFanout Help`
-- `AgentFanout MiniMax`
-- `AgentFanout Local`
-- `AgentFanout Codex`
-- `AgentFanout Claude`
+- `AgentFanout MiniMax` for one-task MiniMax provider-primary execution
+- `AgentFanout MiniMax Mode` for persistent MiniMax provider mode
+- `AgentFanout Local` for one-task Local provider-primary execution after live capability checks
+- `AgentFanout Local Mode` for persistent Local provider mode after live capability checks
+- `AgentFanout Codex` for one-task Codex provider-primary execution
+- `AgentFanout Codex Mode` for persistent Codex provider mode
+- `AgentFanout Claude` for one-task Claude provider-primary execution
+- `AgentFanout Claude Mode` for persistent Claude provider mode
 - `AgentFanout HIGH`
 - `AgentFanout Auto`
 - `AgentFanout Clear`
@@ -77,10 +81,15 @@ task_class: <class>
 constraints: [mcp|secrets|git|destructive|none]
 worth_delegating: true|false
 parallelism: none|serial-delegated|parallel
+orchestration_style: automatic_guarded|provider_primary
 fanout:
-  policy: automatic_guarded
+  policy: automatic_guarded|provider_primary
   planned_workers: <number>
   rationale: <why this count is useful>
+provider_primary:
+  active: true|false
+  codex_review_scope: CompactResultPacketV1_only_unless_escalated
+  max_provider_repair_loops: 2
 dispatch:
   status: launch_required|fanout_blocked|not_required
   main_session_policy: coordinate_wait_integrate|report_block|handle_directly
@@ -92,10 +101,21 @@ executor:
   provider: current|codex|claude|local-llm|minimax|future
   model_selector: <selector>
   reasoning_effort: low|medium|high|xhigh
+provider_capability_snapshot:
+  provider: <provider>
+  selected_model_or_runtime: <selector/model>
+  available_tools: []
+  supports_file_editing: true|false
+  validation_eligible: true|false
+structural_validation:
+  schema: StructuralValidationResultV1
+  required: true|false
 validator:
   required: true|false
   provider: <selector/provider>
   scope: <bounded checklist>
+compact_result_contract:
+  schema: CompactResultPacketV1
 integration: main-session-only
 references_to_load: []
 ```
