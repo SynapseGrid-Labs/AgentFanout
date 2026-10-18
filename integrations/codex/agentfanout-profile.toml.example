@@ -1,0 +1,8 @@
+# Optional dedicated Codex CLI profile for the standalone AgentFanout lane.
+# Copy intentionally; AgentFanout never edits a user's global Codex config.
+[features]
+multi_agent = false
+
+# Codex hooks are useful for detection and audit, but current hook coverage is
+# not a complete authorization boundary. Do not label this profile
+# harness_enforced solely because hooks are present.

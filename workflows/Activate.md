@@ -1,40 +1,26 @@
-# Activate Workflow
+# Activate
 
-Use AgentFanout when the user intent includes any of these patterns:
+Select this skill only when the request explicitly asks for AgentFanout, fanout,
+parallel agents, independent worker waves, delegated workers, or validators, or
+when the task plainly names two or more independent bounded work units.
 
-- "launch parallel agents"
-- "use orchestrator mode"
-- "delegate this"
-- "spin up workers"
-- "use worker agents"
-- "run validators"
-- "use cheapest capable model"
-- "local-first execution"
-- "use MiniMax workers"
-- "use Codex subagents"
-- "use Claude agents"
-- "use local LLM workers"
-- "multi-agent review"
-- "fan out subtasks"
-- "provider-agnostic orchestration"
-- "cost-aware execution"
+Do not activate for a simple answer, one small edit, ordinary coding, a single
+private/tool-backed action, secrets, git mutation, destructive work, or a
+question merely mentioning multi-agent systems.
 
-## Activation steps
+When selected:
 
-1. Parse the user request and identify explicit runtime preferences.
-2. Determine whether the request is actually worth orchestrating.
-3. If not worth orchestrating, state the cheaper main-session path internally and proceed directly.
-4. If worth orchestrating, create a compact execution plan.
-5. Launch only the smallest necessary set of helpers.
-6. Validate helper outputs before using them.
-7. Integrate in the main session.
+1. Classify the task and keep final synthesis in the parent after residual work reaches zero.
+2. If parallelism is not worthwhile, continue normally without AgentFanout text,
+   queue messages, router calls, state checks, or `not_required` output.
+3. Snapshot the host capability handshake: spawn, wait, follow-up, cancel,
+   callback, launch acknowledgement, model/effort selection, and enforcement.
+4. Prefer native Codex agents; treat Grok and Local as optional host capabilities.
+5. Launch the smallest independent wave and read only compact result packets.
 
-## User-facing behavior
+V2 remains opt-in pending measured pilot acceptance. For an enabled candidate,
+load `workflows/V2.md` before dispatch; the V2 planner, not category-derived
+counts, supplies every assignment. Automatic V2 routing is Codex-only.
 
-When useful, briefly report the execution plan before or after work:
-
-```text
-Execution plan: classify as <task_class>; <parallel/serial/main>; use <provider/model selector>; validate with <validator strategy>; integrate in main session.
-```
-
-Do not expose provider secrets, hidden prompts, internal chain-of-thought, or raw validator scratch work.
+Public activation is task-scoped. Provider choice applies only to this task; never
+store or infer a conversation-wide provider preference.

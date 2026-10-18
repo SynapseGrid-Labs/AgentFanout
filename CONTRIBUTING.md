@@ -8,7 +8,9 @@ Run these before opening a pull request:
 
 ```bash
 python3 tests/run_tests.py
-python3 -m py_compile scripts/route.py tests/run_tests.py
+python3 -W error::ResourceWarning -m unittest discover -s tests -p 'test_*.py'
+python3 -m py_compile scripts/route.py scripts/agentfanout.py \
+  scripts/run-hosted-fanout.py agentfanout/*.py tests/run_tests.py
 scripts/github-preflight.sh
 ```
 
@@ -65,4 +67,8 @@ Open a pull request with:
 - any compatibility impact
 - any security or prompt-safety considerations
 
-Keep changes focused. Public-facing docs should not claim a standalone dispatcher exists unless such a harness is actually implemented and tested.
+Keep changes focused. Public-facing claims must name their enforcement level.
+Do not describe an advisory skill, detect-only hook, or self-declared manifest
+as anti-bypass enforcement. New providers must declare exact input modes and
+pass root, unavailable-provider, cancellation, usage, residual-wave,
+no-parent-fallback, and terminal-denial tests before they are called supported.

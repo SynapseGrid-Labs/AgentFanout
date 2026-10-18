@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "MixedTransitionV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "transition_id",
+    "sequence",
+    "assignment_id",
+    "role",
+    "from_binding_sha256",
+    "to_binding",
+    "reason",
+    "proof_sha256"
+  ],
+  "properties": {
+    "schema": {
+      "const": "MixedTransitionV1"
+    },
+    "transition_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "sequence": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "assignment_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9_.:-]{0,127}$"
+    },
+    "role": {
+      "enum": [
+        "worker",
+        "validator"
+      ]
+    },
+    "from_binding_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "to_binding": {
+      "$ref": "MixedRunContractV2.schema.json#/$defs/binding"
+    },
+    "reason": {
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9_.:-]{0,127}$"
+    },
+    "proof_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  }
+}

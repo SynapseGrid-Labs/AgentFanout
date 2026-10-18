@@ -1,597 +1,81 @@
 [
   {
-    "name": "status default",
+    "name": "status is active-run only",
     "prompt": "AgentFanout Status",
-    "expect": {
-      "command.type": "status",
-      "next_state.provider_mode": "Auto",
-      "status.fanout_policy": "automatic_guarded",
-      "status.startup_mode": "compact_skill_routing_only"
-    }
+    "expect": {"command.type": "status", "next_state.provider_mode": "Auto", "status.state_scope": "task_only"}
   },
   {
-    "name": "help command",
+    "name": "help is compact",
     "prompt": "AgentFanout Help",
-    "expect": {
-      "command.type": "help",
-      "route.worth_delegating": false
-    },
-    "expect_contains": {
-      "command.valid_commands": "AgentFanout MiniMax"
-    }
+    "expect": {"command.type": "help", "route.worth_delegating": false},
+    "expect_contains": {"command.valid_commands": "AgentFanout Codex <task>"}
   },
   {
-    "name": "set minimax",
-    "prompt": "AgentFanout MiniMax",
-    "expect": {
-      "command.type": "provider_task",
-      "command.args.lifecycle": "current_task",
-      "next_state.provider_mode": "Auto"
-    }
+    "name": "plain small edit is silent direct work",
+    "prompt": "fix the typo in README",
+    "expect": {"route.task_class": "small-edit", "route.worth_delegating": false, "dispatch.status": "main_session", "references_to_load": []}
   },
   {
-    "name": "set minimax persistent mode",
-    "prompt": "AgentFanout MiniMax Mode",
-    "expect": {
-      "command.type": "set_provider_mode",
-      "command.args.lifecycle": "persistent_conversation_mode",
-      "next_state.provider_mode": "MiniMax"
-    }
+    "name": "ordinary login implementation does not activate",
+    "prompt": "implement a login form",
+    "expect": {"route.worth_delegating": false, "dispatch.status": "main_session"}
   },
   {
-    "name": "set high preserves provider",
-    "prompt": "AgentFanout HIGH",
-    "state_json": {"provider_mode": "MiniMax", "effort_mode": "Auto", "fanout_policy": "automatic_guarded", "state_scope": "conversation_only"},
-    "expect": {
-      "command.type": "set_effort",
-      "next_state.provider_mode": "MiniMax",
-      "next_state.effort_mode": "High"
-    }
+    "name": "architecture question does not activate",
+    "prompt": "what is multi-agent architecture?",
+    "expect": {"route.worth_delegating": false, "dispatch.status": "main_session"}
   },
   {
-    "name": "auto resets defaults",
-    "prompt": "AgentFanout Auto",
-    "state_json": {"provider_mode": "MiniMax", "effort_mode": "High", "fanout_policy": "automatic_guarded", "state_scope": "conversation_only"},
-    "expect": {
-      "command.type": "reset",
-      "next_state.provider_mode": "Auto",
-      "next_state.effort_mode": "Auto"
-    }
+    "name": "prior provider state cannot activate",
+    "prompt": "unrelated complex request after a prior provider preference",
+    "state_json": {"provider_mode": "Grok", "effort_mode": "Auto", "fanout_policy": "automatic_guarded", "state_scope": "conversation_only"},
+    "expect": {"route.worth_delegating": false, "next_state.provider_mode": "Auto", "dispatch.status": "main_session"},
+    "expect_contains": {"warnings": "provider_preference_ignored_task_scoped_only"}
   },
   {
-    "name": "numeric fanout command invalid",
-    "prompt": "AgentFanout Fanout 12",
-    "state_json": {"provider_mode": "MiniMax", "effort_mode": "High", "fanout_policy": "automatic_guarded", "state_scope": "conversation_only"},
-    "expect": {
-      "command.type": "invalid",
-      "next_state.provider_mode": "MiniMax",
-      "route.worth_delegating": false
-    },
-    "expect_contains": {
-      "warnings": "invalid_command"
-    }
+    "name": "explicit Codex task is task scoped",
+    "prompt": "AgentFanout Codex: review API and UI independently",
+    "env": {"AGENT_FANOUT_CODEX_SUBAGENTS": "1"},
+    "expect": {"command.type": "provider_task", "command.args.lifecycle": "task_scoped", "next_state.provider_mode": "Auto", "route.worth_delegating": true, "route.executor.provider": "Codex"}
   },
   {
-    "name": "trivial prompt stays main session",
-    "prompt": "make a one-line copy edit",
-    "expect": {
-      "route.task_class": "small-edit",
-      "route.worth_delegating": false,
-      "orchestration_useful": false,
-      "references_to_load": []
-    }
+    "name": "explicit Grok task is one shot",
+    "prompt": "AgentFanout Grok: review these four modules",
+    "expect": {"command.type": "provider_task", "command.args.lifecycle": "task_scoped", "next_state.provider_mode": "Auto"}
   },
   {
-    "name": "auto fanout falls back to available cheap provider",
-    "prompt": "review twenty independent modules",
-    "expect": {
-      "route.worth_delegating": true,
-      "route.executor.provider": "MiniMax",
-      "fanout.planned_workers": 20,
-      "worker_capsule.memory_context": "none"
-    },
-    "expect_contains": {
-      "warnings": "provider_unavailable:local:service_reachability_unknown"
-    }
-  },
-  {
-    "name": "automatic fanout uses twenty workers",
-    "prompt": "review twenty independent modules",
-    "state_json": {"provider_mode": "MiniMax", "effort_mode": "Auto", "fanout_policy": "automatic_guarded", "state_scope": "conversation_only"},
-    "expect": {
-      "route.worth_delegating": true,
-      "route.executor.provider": "MiniMax",
-      "orchestration_style": "provider_primary",
-      "validator.provider": "MiniMax:same_provider_adversarial",
-      "provider_primary.active": true,
-      "provider_primary.codex_review_scope": "CompactResultPacketV1_only_unless_escalated",
-      "structural_validation.required": true,
-      "compact_result_contract.schema": "CompactResultPacketV1",
-      "orchestration_useful": true,
-      "fanout.planned_workers": 20,
-      "worker_capsule.role_name": "Research Analyst",
-      "worker_capsule.memory_context": "none",
-      "worker_capsule.full_agents_context": false
-    },
-    "expect_contains": {
-      "references_to_load": "references/AgentCapsules.md"
-    }
-  },
-  {
-    "name": "one task minimax provider primary does not persist",
-    "prompt": "AgentFanout MiniMax\nreview three independent modules",
-    "expect": {
-      "command.type": "provider_task",
-      "command.args.lifecycle": "current_task",
-      "next_state.provider_mode": "Auto",
-      "route.worth_delegating": true,
-      "route.executor.provider": "MiniMax",
-      "orchestration_style": "provider_primary",
-      "validator.provider": "MiniMax:same_provider_adversarial",
-      "provider_primary_packet.schema": "ProviderPrimaryPacketV1",
-      "route.executor.tool_envelope.output_contract": "CompactResultPacketV1",
-      "route.executor.tool_envelope.structural_validation_required": true,
-      "route.executor.tool_envelope.same_provider_validator_required": true
-    }
-  },
-  {
-    "name": "local provider primary requires live capability checks",
-    "prompt": "AgentFanout Local\nreview three independent modules",
+    "name": "explicit Local unavailability fails closed",
+    "prompt": "AgentFanout Local: review three independent modules",
     "env": {"AGENT_FANOUT_LOCAL_AVAILABLE": "1"},
-    "expect": {
-      "command.type": "provider_task",
-      "next_state.provider_mode": "Auto",
-      "route.worth_delegating": false,
-      "selected_provider": "main-session",
-      "fanout.blocked": true
-    },
-    "expect_contains": {
-      "warnings": "provider_unavailable:local:live_capability_check_missing"
-    }
+    "expect": {"command.type": "provider_task", "next_state.provider_mode": "Auto", "route.worth_delegating": false, "selected_provider": "main-session", "fanout.blocked": true},
+    "expect_contains": {"warnings": "provider_unavailable:local:endpoint_missing"}
   },
   {
-    "name": "local provider primary passes with verified live capability",
-    "prompt": "AgentFanout Local\nreview three independent modules",
-    "env": {
-      "AGENT_FANOUT_LOCAL_AVAILABLE": "1",
-      "AGENT_FANOUT_LOCAL_LIVE_CHECKS": "1",
-      "AGENT_FANOUT_LOCAL_CAPABILITY_VERIFIED": "1",
-      "AGENT_FANOUT_LOCAL_ACTIVE_MODE": "think",
-      "AGENT_FANOUT_LOCAL_MODEL_ID": "gpt-oss-120b-heretic"
-    },
-    "expect": {
-      "route.worth_delegating": true,
-      "route.executor.provider": "Local",
-      "orchestration_style": "provider_primary",
-      "provider_capability_snapshot.validation_eligible": true,
-      "provider_capability_snapshot.loaded_model_id": "gpt-oss-120b-heretic",
-      "validator.provider": "Local:same_provider_adversarial"
-    }
+    "name": "native Codex wave is preferred for independent work",
+    "prompt": "use parallel agents to inspect API, UI, database, and tests",
+    "env": {"AGENT_FANOUT_CODEX_SUBAGENTS": "1"},
+    "expect": {"route.worth_delegating": true, "route.executor.provider": "Codex", "fanout.planned_workers": 4}
   },
   {
-    "name": "coding worker gets coding specialist capsule",
-    "prompt": "debug this failing test",
-    "state_json": {"provider_mode": "MiniMax", "effort_mode": "Auto", "fanout_policy": "automatic_guarded", "state_scope": "conversation_only"},
-    "expect": {
-      "route.task_class": "debug",
-      "worker_capsule.role_name": "Coding Specialist",
-      "worker_capsule.full_codexagent_context": false
-    }
+    "name": "fanout research activates explicitly",
+    "prompt": "fan out these independent research questions",
+    "env": {"AGENT_FANOUT_CODEX_SUBAGENTS": "1"},
+    "expect": {"route.worth_delegating": true, "fanout.planned_workers": 3}
   },
   {
-    "name": "custom agents mark full agents composition",
-    "prompt": "spin up three custom skeptical security agents",
-    "expect": {
-      "route.worth_delegating": true,
-      "agent_composition_required": true,
-      "worker_capsule.role_name": "Security Reviewer",
-      "worker_capsule.memory_context": "none"
-    },
-    "expect_contains": {
-      "references_to_load": "~/.pai/skills/Agents/SKILL.md"
-    }
-  },
-  {
-    "name": "codex worker marks adapter",
-    "prompt": "use Codex subagents to review this design",
-    "state_json": {"provider_mode": "Codex", "effort_mode": "Auto", "fanout_policy": "automatic_guarded", "state_scope": "conversation_only"},
-    "expect": {
-      "codex_adapter_required": true
-    },
-    "expect_contains": {
-      "references_to_load": "adapters/Codex.md"
-    }
-  },
-  {
-    "name": "codex cheap explorer requires explicit mini capability override",
-    "prompt": "use Codex subagents to classify these independent notes across many files",
-    "state_json": {"provider_mode": "Codex", "effort_mode": "Auto", "fanout_policy": "automatic_guarded", "state_scope": "conversation_only"},
-    "expect": {
-      "codex_adapter_required": true,
-      "route.task_class": "bulk-classify",
-      "route.executor.model_selector": "current-fast-mini",
-      "route.executor.reasoning_effort": "low",
-      "route.executor.runtime_launch.codex_native.cost_tier": "cheap",
-      "route.executor.runtime_launch.codex_native.must_pass_model_override": true,
-      "route.executor.runtime_launch.codex_native.required_model_capability": "mini_or_fast",
-      "dispatch.runtime_launch.codex_native.do_not_use_default_frontier_for_fast_mini": true
-    },
-    "expect_contains": {
-      "references_to_load": "adapters/Codex.md"
-    }
-  },
-  {
-    "name": "legacy agentorchestrator does not mutate state",
-    "prompt": "AgentOrchestrator MiniMax review three modules",
-    "expect": {
-      "command.type": "route",
-      "next_state.provider_mode": "Auto",
-      "route.executor.provider": "MiniMax"
-    },
-    "expect_contains": {
-      "warnings": "legacy_trigger_one_turn_hint_only"
-    }
-  },
-  {
-    "name": "legacy orchestratormode does not mutate state",
-    "prompt": "OrchestratorMode MiniMax review three modules",
-    "expect": {
-      "command.type": "route",
-      "next_state.provider_mode": "Auto",
-      "route.executor.provider": "MiniMax",
-      "fanout.planned_workers": 3
-    },
-    "expect_contains": {
-      "warnings": "legacy_trigger_one_turn_hint_only"
-    }
-  },
-  {
-    "name": "private mcp stays main session",
+    "name": "private tools stay in parent",
     "prompt": "send an email",
-    "state_json": {"provider_mode": "MiniMax", "effort_mode": "Auto", "fanout_policy": "automatic_guarded", "state_scope": "conversation_only"},
-    "expect": {
-      "route.task_class": "mcp-inline",
-      "route.worth_delegating": false,
-      "hard_gates.requires_mcp_private_tools": true
-    }
+    "state_json": {"provider_mode": "Grok", "effort_mode": "Auto", "fanout_policy": "automatic_guarded", "state_scope": "conversation_only"},
+    "expect": {"route.task_class": "mcp-inline", "route.worth_delegating": false, "hard_gates.requires_mcp_private_tools": true, "selected_provider": "main-session"}
   },
   {
-    "name": "private memory request stays main session",
-    "prompt": "use memory to recall private context about this project",
-    "state_json": {"provider_mode": "MiniMax", "effort_mode": "Auto", "fanout_policy": "automatic_guarded", "state_scope": "conversation_only"},
-    "expect": {
-      "route.task_class": "mcp-inline",
-      "route.worth_delegating": false,
-      "hard_gates.requires_mcp_private_tools": true,
-      "selected_provider": "main-session"
-    }
+    "name": "secrets stay in parent",
+    "prompt": "debug failing auth with api key placeholder",
+    "expect": {"hard_gates.requires_secrets": true, "route.worth_delegating": false, "selected_provider": "main-session"}
   },
   {
-    "name": "host memory usage investigation routes to minimax research worker",
-    "prompt": "I want you to research what is going on with the staging host and why its memory usage is so large. use read-only diagnostics for access. agentfanout minimax",
-    "state_json": {"provider_mode": "Auto", "effort_mode": "Auto", "fanout_policy": "automatic_guarded", "state_scope": "conversation_only"},
-    "expect": {
-      "route.task_class": "bulk-read",
-      "route.worth_delegating": true,
-      "route.parallelism": "parallel",
-      "route.executor.provider": "MiniMax",
-      "hard_gates.requires_mcp_private_tools": false,
-      "fanout.planned_workers": 3,
-      "worker_capsule.worker_type": "research_worker",
-      "dispatch.status": "launch_required",
-      "dispatch.main_session_policy": "coordinate_wait_integrate",
-      "dispatch.main_session_may_duplicate_worker_research": false
-    },
-    "expect_contains_all": {
-      "fanout.work_units": ["live_host_state", "process_service_state"]
-    }
-  },
-  {
-    "name": "openai style secret stays main session",
-    "prompt": "debug failing auth with sk-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-    "state_json": {"provider_mode": "MiniMax", "effort_mode": "Auto", "fanout_policy": "automatic_guarded", "state_scope": "conversation_only"},
-    "expect": {
-      "hard_gates.requires_secrets": true,
-      "route.worth_delegating": false,
-      "selected_provider": "main-session",
-      "fanout.planned_workers": 0
-    }
-  },
-  {
-    "name": "aws access key assignment stays main session",
-    "prompt": "debug auth failure AWS_ACCESS_KEY_ID=AKIA1234567890ABCDEF",
-    "state_json": {"provider_mode": "MiniMax", "effort_mode": "Auto", "fanout_policy": "automatic_guarded", "state_scope": "conversation_only"},
-    "expect": {
-      "hard_gates.requires_secrets": true,
-      "route.worth_delegating": false,
-      "selected_provider": "main-session",
-      "fanout.planned_workers": 0
-    }
-  },
-  {
-    "name": "bearer header stays main session",
-    "prompt": "debug failing auth Authorization: Bearer abcdefghijklmnopqrstuvwxyz123456",
-    "state_json": {"provider_mode": "MiniMax", "effort_mode": "Auto", "fanout_policy": "automatic_guarded", "state_scope": "conversation_only"},
-    "expect": {
-      "hard_gates.requires_secrets": true,
-      "route.worth_delegating": false,
-      "selected_provider": "main-session",
-      "fanout.planned_workers": 0
-    }
-  },
-  {
-    "name": "jwt shaped value stays main session",
-    "prompt": "debug failing auth eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.aaaaaaaaaaaaaaaaaaaa.bbbbbbbbbbbbbbbbbbbb",
-    "state_json": {"provider_mode": "MiniMax", "effort_mode": "Auto", "fanout_policy": "automatic_guarded", "state_scope": "conversation_only"},
-    "expect": {
-      "hard_gates.requires_secrets": true,
-      "route.worth_delegating": false,
-      "selected_provider": "main-session",
-      "fanout.planned_workers": 0
-    }
-  },
-  {
-    "name": "github classic token shaped value stays main session",
-    "prompt": "debug failing auth ghp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-    "state_json": {"provider_mode": "MiniMax", "effort_mode": "Auto", "fanout_policy": "automatic_guarded", "state_scope": "conversation_only"},
-    "expect": {
-      "hard_gates.requires_secrets": true,
-      "route.worth_delegating": false,
-      "selected_provider": "main-session",
-      "fanout.planned_workers": 0
-    }
-  },
-  {
-    "name": "github fine grained token shaped value stays main session",
-    "prompt": "debug failing auth github_pat_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-    "state_json": {"provider_mode": "MiniMax", "effort_mode": "Auto", "fanout_policy": "automatic_guarded", "state_scope": "conversation_only"},
-    "expect": {
-      "hard_gates.requires_secrets": true,
-      "route.worth_delegating": false,
-      "selected_provider": "main-session",
-      "fanout.planned_workers": 0
-    }
-  },
-  {
-    "name": "slack token shaped value stays main session",
-    "prompt": "debug failing auth xoxb-aaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-    "state_json": {"provider_mode": "MiniMax", "effort_mode": "Auto", "fanout_policy": "automatic_guarded", "state_scope": "conversation_only"},
-    "expect": {
-      "hard_gates.requires_secrets": true,
-      "route.worth_delegating": false,
-      "selected_provider": "main-session",
-      "fanout.planned_workers": 0
-    }
-  },
-  {
-    "name": "google api key shaped value stays main session",
-    "prompt": "debug failing auth AIzaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-    "state_json": {"provider_mode": "MiniMax", "effort_mode": "Auto", "fanout_policy": "automatic_guarded", "state_scope": "conversation_only"},
-    "expect": {
-      "hard_gates.requires_secrets": true,
-      "route.worth_delegating": false,
-      "selected_provider": "main-session",
-      "fanout.planned_workers": 0
-    }
-  },
-  {
-    "name": "inline dsn with password stays main session",
-    "prompt": "debug failing auth postgres://user:notarealpassword123@example.invalid/db",
-    "state_json": {"provider_mode": "MiniMax", "effort_mode": "Auto", "fanout_policy": "automatic_guarded", "state_scope": "conversation_only"},
-    "expect": {
-      "hard_gates.requires_secrets": true,
-      "route.worth_delegating": false,
-      "selected_provider": "main-session",
-      "fanout.planned_workers": 0
-    }
-  },
-  {
-    "name": "password env assignment stays main session",
-    "prompt": "debug failing auth DATABASE_PASSWORD=notarealpassword123",
-    "state_json": {"provider_mode": "MiniMax", "effort_mode": "Auto", "fanout_policy": "automatic_guarded", "state_scope": "conversation_only"},
-    "expect": {
-      "hard_gates.requires_secrets": true,
-      "route.worth_delegating": false,
-      "selected_provider": "main-session",
-      "fanout.planned_workers": 0
-    }
-  },
-  {
-    "name": "disk wording is not secret gated",
-    "prompt": "debug disk space issue in worker logs",
-    "state_json": {"provider_mode": "MiniMax", "effort_mode": "Auto", "fanout_policy": "automatic_guarded", "state_scope": "conversation_only"},
-    "expect": {
-      "hard_gates.requires_secrets": false,
-      "route.worth_delegating": true,
-      "selected_provider": "MiniMax"
-    }
-  },
-  {
-    "name": "skip list wording is not secret gated",
-    "prompt": "review skip-list implementation for routing",
-    "state_json": {"provider_mode": "MiniMax", "effort_mode": "Auto", "fanout_policy": "automatic_guarded", "state_scope": "conversation_only"},
-    "expect": {
-      "hard_gates.requires_secrets": false,
-      "route.worth_delegating": false,
-      "selected_provider": "main-session"
-    }
-  },
-  {
-    "name": "failed remote host investigation requires worker-first fanout",
-    "prompt": "I need you to fully investigate the staging host. We ran a demo application there days ago and I feel like we have a lot of stale processes that need shut down. full investigation agentfanout minimax",
-    "state_json": {"provider_mode": "Auto", "effort_mode": "Auto", "fanout_policy": "automatic_guarded", "state_scope": "conversation_only"},
-    "expect": {
-      "route.task_class": "bulk-read",
-      "route.worth_delegating": true,
-      "route.parallelism": "parallel",
-      "route.executor.provider": "MiniMax",
-      "fanout.planned_workers": 3,
-      "worker_capsule.worker_type": "research_worker",
-      "dispatch.status": "launch_required",
-      "dispatch.launch_before_main_research": true,
-      "dispatch.fallback_allowed": false,
-      "dispatch.main_session_policy": "coordinate_wait_integrate",
-      "dispatch.main_session_may_duplicate_worker_research": false
-    },
-    "expect_contains": {
-      "worker_capsule.read_only_tool_scope": "read_only_ssh_diagnostics_when_explicitly_scoped",
-      "fanout.work_units": "live_host_state"
-    }
-  },
-  {
-    "name": "integration path investigation does not small-edit",
-    "prompt": "Investigate how the notification integration communicates with the workflow service, whether notification controllers are inside that service, and whether the integration path exists; use MiniMax as a read-only second-opinion validator.",
-    "state_json": {"provider_mode": "Auto", "effort_mode": "Auto", "fanout_policy": "automatic_guarded", "state_scope": "conversation_only"},
-    "expect": {
-      "route.task_class": "bulk-read",
-      "route.worth_delegating": true,
-      "route.parallelism": "parallel",
-      "route.executor.provider": "MiniMax",
-      "fanout.planned_workers": 4,
-      "worker_capsule.worker_type": "research_worker",
-      "dispatch.status": "launch_required",
-      "dispatch.launch_before_main_research": true,
-      "dispatch.main_session_policy": "coordinate_wait_integrate",
-      "dispatch.main_session_may_duplicate_worker_research": false
-    },
-    "expect_contains": {
-      "fanout.work_units": "independent_validation"
-    }
-  },
-  {
-    "name": "fanout unavailable blocks instead of silent main-session fallback",
-    "prompt": "fully investigate repo services and verify the path exists",
-    "env": {
-      "PAI_DIR": "/tmp/agentfanout-no-pai",
-      "AGENT_FANOUT_MINIMAX_AVAILABLE": "0",
-      "AGENT_FANOUT_CODEX_SUBAGENTS": "0",
-      "AGENT_FANOUT_LOCAL_AVAILABLE": "0",
-      "AGENT_FANOUT_CLAUDE_AVAILABLE": "0"
-    },
-    "unset_env": ["CODEX_THREAD_ID", "PAI_CODEX_LAUNCH_ID"],
-    "expect": {
-      "route.task_class": "bulk-read",
-      "route.worth_delegating": false,
-      "fanout.blocked": true,
-      "dispatch.required": true,
-      "dispatch.status": "fanout_blocked",
-      "dispatch.fallback_allowed": false,
-      "dispatch.main_session_policy": "report_block"
-    },
-    "expect_contains": {
-      "warnings": "provider_unavailable:codex:native_subagents_unknown"
-    }
-  },
-  {
-    "name": "clear approval executes pending plan",
-    "prompt": "implement it",
-    "pending_plan": true,
-    "expect": {
-      "approved_plan_should_execute": true,
-      "reason": "clear_approval"
-    }
-  },
-  {
-    "name": "ambiguous approval does not execute",
-    "prompt": "ok",
-    "pending_plan": true,
-    "expect": {
-      "approved_plan_should_execute": false,
-      "reason": "ambiguous_approval"
-    },
-    "expect_contains": {
-      "warnings": "approval_ambiguous"
-    }
-  },
-  {
-    "name": "approval words use phrase boundaries",
-    "prompt": "token rotation note",
-    "pending_plan": true,
-    "expect": {
-      "approved_plan_should_execute": false,
-      "reason": "no_clear_approval"
-    }
-  },
-  {
-    "name": "stale approval does not execute",
-    "prompt": "execute the plan",
-    "pending_plan": true,
-    "plan_stale": true,
-    "expect": {
-      "approved_plan_should_execute": false,
-      "reason": "plan_stale"
-    }
-  },
-  {
-    "name": "planning prompt keeps plan precedence over broad research words",
-    "prompt": "plan how to migrate the architecture safely",
-    "state_json": {"provider_mode": "MiniMax", "effort_mode": "Auto", "fanout_policy": "automatic_guarded", "state_scope": "conversation_only"},
-    "expect": {
-      "route.task_class": "plan",
-      "route.executor.reasoning_effort": "high",
-      "route.executor.provider": "MiniMax"
-    }
-  },
-  {
-    "name": "reasoning prompt keeps reason precedence over investigation words",
-    "prompt": "reason about correctness and prove the invariant before implementation",
-    "state_json": {"provider_mode": "MiniMax", "effort_mode": "Auto", "fanout_policy": "automatic_guarded", "state_scope": "conversation_only"},
-    "expect": {
-      "route.task_class": "reason",
-      "route.executor.reasoning_effort": "high",
-      "route.executor.provider": "MiniMax"
-    }
-  },
-  {
-    "name": "circuit breaker after failures",
-    "prompt": "review three independent modules",
-    "worker_failures": 3,
-    "state_json": {"provider_mode": "MiniMax", "effort_mode": "Auto", "fanout_policy": "automatic_guarded", "state_scope": "conversation_only"},
-    "expect": {
-      "circuit_breaker.triggered": true,
-      "circuit_breaker.failure_count": 3,
-      "route.worth_delegating": false,
-      "route.executor.provider": "main-session",
-      "route.parallelism": "none",
-      "fanout.planned_workers": 0,
-      "fanout.blocked": true,
-      "dispatch.status": "fanout_blocked",
-      "dispatch.planned_workers": 0,
-      "dispatch.fallback_allowed": false
-    },
-    "expect_contains": {
-      "warnings": "circuit_breaker_triggered",
-      "fanout.guardrails_applied": "circuit_breaker_stopped_new_launches"
-    }
-  },
-  {
-    "name": "minimax tool agent envelope emitted for research",
-    "prompt": "AgentFanout MiniMax\nfully investigate service state with OpsVault and repo search",
-    "env": {"AGENT_FANOUT_MINIMAX_TOOL_AGENT": "1"},
-    "expect": {
-      "route.executor.provider": "MiniMax",
-      "route.executor.runtime_launch.minimax_tool_agent.stdin_request": true,
-      "route.executor.runtime_launch.minimax_tool_agent.required_flag": "AGENT_FANOUT_MINIMAX_TOOL_AGENT=1",
-      "tool_envelope.version": 1,
-      "tool_envelope.mode": "research_worker",
-      "tool_envelope.opsvault.enabled": true
-    },
-    "expect_contains": {
-      "tool_envelope.tools": "repo_search"
-    }
-  },
-  {
-    "name": "minimax tool work blocks when tool agent disabled",
-    "prompt": "AgentFanout MiniMax\nfully investigate service state with OpsVault and repo search",
-    "env": {"AGENT_FANOUT_MINIMAX_TOOL_AGENT": "0"},
-    "expect": {
-      "route.executor.provider": "main-session",
-      "route.worth_delegating": false,
-      "dispatch.status": "fanout_blocked",
-      "dispatch.fallback_allowed": false
-    },
-    "expect_contains": {
-      "warnings": "fanout_blocked:minimax_tool_agent_disabled"
-    }
+    "name": "legacy orchestrator phrase is not public activation",
+    "prompt": "what is OrchestratorMode?",
+    "expect": {"route.worth_delegating": false, "dispatch.status": "main_session"}
   }
 ]

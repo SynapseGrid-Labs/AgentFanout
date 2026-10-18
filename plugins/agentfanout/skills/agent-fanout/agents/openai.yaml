@@ -1,0 +1,4 @@
+interface:
+  display_name: "AgentFanout"
+  short_description: "Persistent parallel worker waves"
+  default_prompt: "Use $agent-fanout for task-scoped parallel worker waves and replan after every completed result batch."

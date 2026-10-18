@@ -1,0 +1,20 @@
+{
+  "name": "agentfanout-local",
+  "interface": {
+    "displayName": "AgentFanout Local Development"
+  },
+  "plugins": [
+    {
+      "name": "agentfanout",
+      "source": {
+        "source": "local",
+        "path": "./plugins/agentfanout"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    }
+  ]
+}

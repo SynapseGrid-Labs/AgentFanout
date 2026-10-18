@@ -1,0 +1,221 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EvidenceEgressPolicyV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "destinations",
+    "allowed"
+  ],
+  "properties": {
+    "schema": {
+      "const": "EvidenceEgressPolicyV1"
+    },
+    "destinations": {
+      "type": "object",
+      "minProperties": 1,
+      "maxProperties": 64,
+      "propertyNames": {
+        "type": "string",
+        "pattern": "^[A-Za-z][A-Za-z0-9_.:-]{0,127}$"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "provider"
+        ],
+        "properties": {
+          "kind": {
+            "enum": [
+              "host",
+              "local",
+              "cloud"
+            ]
+          },
+          "provider": {
+            "enum": [
+              "Host",
+              "Local",
+              "GrokCLI",
+              "Grok",
+              "Codex",
+              "Claude",
+              "Gemini"
+            ]
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "kind": {
+                  "const": "host"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "provider": {
+                  "enum": [
+                    "Host"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "kind": {
+                  "const": "local"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "provider": {
+                  "enum": [
+                    "Local"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "kind": {
+                  "const": "cloud"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "provider": {
+                  "enum": [
+                    "GrokCLI",
+                    "Grok",
+                    "Codex",
+                    "Claude",
+                    "Gemini"
+                  ]
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "allowed": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "input",
+        "worker_result",
+        "peer_evidence",
+        "artifact",
+        "error",
+        "residual",
+        "telemetry",
+        "retained_session",
+        "validator_input",
+        "parent_synthesis"
+      ],
+      "properties": {
+        "input": {
+          "type": "array",
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_.:-]{0,127}$"
+          }
+        },
+        "worker_result": {
+          "type": "array",
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_.:-]{0,127}$"
+          }
+        },
+        "peer_evidence": {
+          "type": "array",
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_.:-]{0,127}$"
+          }
+        },
+        "artifact": {
+          "type": "array",
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_.:-]{0,127}$"
+          }
+        },
+        "error": {
+          "type": "array",
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_.:-]{0,127}$"
+          }
+        },
+        "residual": {
+          "type": "array",
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_.:-]{0,127}$"
+          }
+        },
+        "telemetry": {
+          "type": "array",
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_.:-]{0,127}$"
+          }
+        },
+        "retained_session": {
+          "type": "array",
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_.:-]{0,127}$"
+          }
+        },
+        "validator_input": {
+          "type": "array",
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_.:-]{0,127}$"
+          }
+        },
+        "parent_synthesis": {
+          "type": "array",
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_.:-]{0,127}$"
+          }
+        }
+      }
+    }
+  }
+}

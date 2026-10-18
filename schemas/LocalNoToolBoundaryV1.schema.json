@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://synapsegrid-labs.example/schemas/agentfanout/LocalNoToolBoundaryV1.schema.json",
+  "title": "LocalNoToolBoundaryV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema", "endpoint", "endpoint_sha256", "endpoint_policy",
+    "allow_loopback_http", "selector_alias", "exact_model_id",
+    "reasoning_effort", "required_mode", "auth_mode", "input_mode",
+    "tools_enabled", "project_root_mounted", "network_scope",
+    "boundary_status", "capability_attestation_sha256",
+    "bridge_observation_sha256"
+  ],
+  "properties": {
+    "schema": {"const": "LocalNoToolBoundaryV1"},
+    "endpoint": {"type": "string", "minLength": 1, "maxLength": 500},
+    "endpoint_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "endpoint_policy": {"enum": ["https", "numeric_loopback_http"]},
+    "allow_loopback_http": {"type": "boolean"},
+    "selector_alias": {"type": "string", "minLength": 1, "maxLength": 200},
+    "exact_model_id": {"type": "string", "minLength": 1, "maxLength": 200},
+    "reasoning_effort": {"enum": ["low", "medium", "high", "xhigh", "ultra"]},
+    "required_mode": {"type": "string", "minLength": 1, "maxLength": 200},
+    "auth_mode": {"const": "none"},
+    "input_mode": {"const": "bounded_file_text"},
+    "tools_enabled": {"const": false},
+    "project_root_mounted": {"const": false},
+    "network_scope": {"const": "single_exact_endpoint"},
+    "boundary_status": {"const": "host_adapter_no_tool_protocol"},
+    "capability_attestation_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "bridge_observation_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+  }
+}

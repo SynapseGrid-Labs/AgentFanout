@@ -10,7 +10,22 @@ Required order:
 2. Review the change through the local source PR/review process.
 3. Complete the full security audit on the local PR/diff.
 4. Document the audit result with reviewer, date, commit/PR reference, findings, remediation, and pass/fail status.
-5. Create or update GitHub-facing artifacts only after the gate passes.
+5. Complete profile-specific human UAT for the exact candidate.
+6. Obtain explicit maintainer approval of the exact README and every image,
+   identified by commit and SHA-256 hashes. Preserve the approved bytes.
+7. Obtain separate authorization for the exact GitHub repository, base,
+   branch upload and PR action. A branch push or draft PR is already an upload.
+8. Create or update only the authorized GitHub-facing artifacts after all gates pass.
+
+Audit every tracked file and all newly introduced commits/objects/metadata, not
+only a packaging allowlist or latest diff. Inspect image pixels/frames and hidden
+metadata, external references, LFS, submodules, symlinks and publication text.
+Keep private evidence and maintainer denylists outside the exported tree.
+
+Changed source requires affected engineering/audit checks to be renewed. Any
+README or image change invalidates approval of the affected content. Content
+approval does not authorize upload, merge, tags/releases, deployment, repository
+settings or social-preview changes. Those are separate operator actions.
 
 Agents and automation must stop before GitHub-facing activity if they cannot verify the local review and audit reference.
 
@@ -19,7 +34,10 @@ Agents and automation must stop before GitHub-facing activity if they cannot ver
 The audit must include:
 
 - `python3 tests/run_tests.py`
-- `python3 -m py_compile scripts/route.py tests/run_tests.py`
+- `python3 -m py_compile agentfanout/*.py scripts/*.py tests/*.py`
+- `python3 -m unittest tests/test_runtime_parity.py`
+- `python3 -m unittest tests/test_release_pipeline.py`
+- `python3 -m unittest tests/test_vllmworker_broker_smoke.py`
 - `scripts/github-preflight.sh`
 - secrets, credentials, and credential-shaped examples
 - private infrastructure references
@@ -38,7 +56,10 @@ local_review_ref: local-source-pr-or-commit
 github_target: branch-pr-release-or-export
 commands:
   - python3 tests/run_tests.py
-  - python3 -m py_compile scripts/route.py tests/run_tests.py
+  - python3 -m py_compile agentfanout/*.py scripts/*.py tests/*.py
+  - python3 -m unittest tests/test_runtime_parity.py
+  - python3 -m unittest tests/test_release_pipeline.py
+  - python3 -m unittest tests/test_vllmworker_broker_smoke.py
   - scripts/github-preflight.sh
 findings: []
 remediation: []

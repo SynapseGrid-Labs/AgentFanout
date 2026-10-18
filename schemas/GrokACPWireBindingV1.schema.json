@@ -1,0 +1,120 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "GrokACPWireBindingV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "binary_sha256",
+    "mapping_sha256",
+    "methods",
+    "evidence_id",
+    "usage_surface"
+  ],
+  "properties": {
+    "schema": {
+      "const": "GrokACPWireBindingV1"
+    },
+    "binary_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "mapping_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "methods": {
+      "type": "array",
+      "uniqueItems": true,
+      "maxItems": 8,
+      "items": {
+        "enum": [
+          "authenticate",
+          "initialize",
+          "session/new",
+          "session/prompt",
+          "session/set_config_option",
+          "x.ai/auth/info",
+          "x.ai/billing",
+          "x.ai/session/usage"
+        ]
+      }
+    },
+    "evidence_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "usage_surface": {
+      "enum": [
+        "turn_and_session",
+        "session_totals_only"
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "properties": {
+        "methods": {
+          "contains": {
+            "const": "authenticate"
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "methods": {
+          "contains": {
+            "const": "initialize"
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "methods": {
+          "contains": {
+            "const": "session/new"
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "methods": {
+          "contains": {
+            "const": "session/prompt"
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "methods": {
+          "contains": {
+            "const": "session/set_config_option"
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "methods": {
+          "contains": {
+            "const": "x.ai/auth/info"
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "methods": {
+          "contains": {
+            "const": "x.ai/session/usage"
+          }
+        }
+      }
+    }
+  ]
+}

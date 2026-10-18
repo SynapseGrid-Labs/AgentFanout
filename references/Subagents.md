@@ -68,7 +68,10 @@ Use a validator after any worker result that can materially affect final output.
 
 ## External model worker
 
-Use when the user requests a provider or when cost/capability policy chooses an API/CLI provider. External workers must receive the minimum necessary context and no private-tool/secrets material.
+Use when the user requests a provider or when cost/capability policy chooses an
+API/CLI provider. External workers receive minimum context and only
+operator-selected non-sensitive inputs. Pattern screening is an extra rejection
+layer, not proof that content is secret-free.
 
 ## Local model worker
 

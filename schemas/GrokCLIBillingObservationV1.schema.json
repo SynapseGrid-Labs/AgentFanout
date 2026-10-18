@@ -1,0 +1,134 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "GrokCLIBillingObservationV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "credit_usage_percent",
+    "on_demand_enabled",
+    "is_unified_billing_user",
+    "amounts_usd_cents",
+    "current_period",
+    "spending_authorized",
+    "entitlement_verified",
+    "zero_marginal_charge_proved"
+  ],
+  "properties": {
+    "schema": {
+      "const": "GrokCLIBillingObservationV1"
+    },
+    "credit_usage_percent": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 1000000
+    },
+    "on_demand_enabled": {
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
+    "is_unified_billing_user": {
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
+    "amounts_usd_cents": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "monthlyLimit",
+        "used",
+        "onDemandCap",
+        "onDemandUsed",
+        "prepaidBalance"
+      ],
+      "properties": {
+        "monthlyLimit": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        },
+        "used": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        },
+        "onDemandCap": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        },
+        "onDemandUsed": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        },
+        "prepaidBalance": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        }
+      }
+    },
+    "current_period": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 100
+        },
+        "start": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 100
+        },
+        "end": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 100
+        }
+      }
+    },
+    "spending_authorized": {
+      "const": false
+    },
+    "entitlement_verified": {
+      "const": false
+    },
+    "zero_marginal_charge_proved": {
+      "const": false
+    }
+  }
+}

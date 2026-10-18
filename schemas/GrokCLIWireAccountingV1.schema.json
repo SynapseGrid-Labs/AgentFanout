@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "GrokCLIWireAccountingV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "mapping_sha256",
+    "accounting_v1",
+    "wire_seen",
+    "provider_seen"
+  ],
+  "properties": {
+    "schema": {
+      "const": "GrokCLIWireAccountingV1"
+    },
+    "mapping_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "accounting_v1": {
+      "type": "object",
+      "required": [
+        "schema",
+        "seen",
+        "baselines",
+        "modes"
+      ],
+      "properties": {
+        "schema": {
+          "const": "GrokCLIUsageV1"
+        },
+        "seen": {
+          "type": "object"
+        },
+        "baselines": {
+          "type": "object"
+        },
+        "modes": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
+    },
+    "wire_seen": {
+      "type": "object",
+      "maxProperties": 10000,
+      "additionalProperties": {
+        "type": "string",
+        "pattern": "^[a-f0-9]{64}$"
+      }
+    },
+    "provider_seen": {
+      "type": "object",
+      "maxProperties": 10000,
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 1024
+      }
+    }
+  }
+}

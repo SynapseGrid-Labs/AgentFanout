@@ -1,6 +1,7 @@
 # Claude Adapter
 
-Claude routing is provider-specific. The orchestration core remains provider-agnostic.
+Claude is a retired compatibility adapter and is disabled in the default
+registry. The orchestration core remains provider-agnostic.
 
 ## Best use
 

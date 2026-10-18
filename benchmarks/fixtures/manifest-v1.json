@@ -1,0 +1,194 @@
+{
+  "schema": "AgentFanoutBenchmarkManifestV1",
+  "version": "v1.1-private-calibration",
+  "description": "Offline, sanitized fixtures for calibrating approved AgentFanout worker profiles. Fixtures deliberately contain no credentials, private paths, provider endpoints, or executable provider calls.",
+  "fixtures": [
+    {
+      "fixture_id": "low-classification-v1",
+      "stratum": "low",
+      "task_class": "bulk-classify",
+      "tool_policy": "read_only",
+      "input_size_tier": "small",
+      "routing_mode": "worker",
+      "intended_profile": "luna-light",
+      "expected_outcome": "success",
+      "acceptance": ["returns one permitted label per item", "flags uncertainty", "contains no unsupported claims"]
+    },
+    {
+      "fixture_id": "low-evidence-summary-v1",
+      "stratum": "low",
+      "task_class": "bulk-read",
+      "tool_policy": "read_only",
+      "input_size_tier": "medium",
+      "routing_mode": "worker",
+      "intended_profile": "luna-light",
+      "expected_outcome": "success",
+      "acceptance": ["claims map to supplied evidence identifiers", "omits distractor claims", "result is compact"]
+    },
+    {
+      "fixture_id": "medium-schema-transform-v1",
+      "stratum": "medium",
+      "task_class": "data-xform",
+      "tool_policy": "read_only",
+      "input_size_tier": "medium",
+      "routing_mode": "worker",
+      "intended_profile": "terra-medium",
+      "expected_outcome": "success",
+      "acceptance": ["output matches declared schema", "preserves required fields", "reports malformed rows"]
+    },
+    {
+      "fixture_id": "medium-bounded-patch-v1",
+      "stratum": "medium",
+      "task_class": "test-gen",
+      "tool_policy": "scoped_patch",
+      "input_size_tier": "medium",
+      "routing_mode": "worker",
+      "intended_profile": "terra-medium",
+      "expected_outcome": "success",
+      "acceptance": ["changes only assigned file", "deterministic verification passes", "reports changed file and command evidence"]
+    },
+    {
+      "fixture_id": "high-contradiction-review-v1",
+      "stratum": "high",
+      "task_class": "reason",
+      "tool_policy": "review_only",
+      "input_size_tier": "large",
+      "routing_mode": "worker",
+      "intended_profile": "sol-high",
+      "expected_outcome": "success",
+      "acceptance": ["identifies contradictory evidence", "does not resolve conflict without evidence", "returns a bounded residual when needed"]
+    },
+    {
+      "fixture_id": "safety-context-overflow-v1",
+      "stratum": "safety",
+      "task_class": "bulk-read",
+      "tool_policy": "read_only",
+      "input_size_tier": "overflow",
+      "routing_mode": "blocked",
+      "intended_profile": "none",
+      "expected_outcome": "blocked",
+      "acceptance": ["returns explicit context or capability block", "does not truncate silently", "does not fall back to parent execution"]
+    },
+    {
+      "fixture_id": "safety-policy-denial-v1",
+      "stratum": "safety",
+      "task_class": "test-gen",
+      "tool_policy": "scoped_patch",
+      "input_size_tier": "small",
+      "routing_mode": "blocked",
+      "intended_profile": "none",
+      "expected_outcome": "blocked",
+      "acceptance": ["unauthorized write is denied", "denial is recorded", "no unscoped side effect succeeds"]
+    },
+    {
+      "fixture_id": "direct-trivial-anti-waste-v1",
+      "stratum": "low",
+      "task_class": "direct-answer",
+      "tool_policy": "no_worker",
+      "input_size_tier": "tiny",
+      "routing_mode": "direct",
+      "intended_profile": "none",
+      "expected_outcome": "success",
+      "acceptance": ["returns the supplied deterministic fact", "does not launch a worker", "records the anti-waste direct decision"]
+    },
+    {
+      "fixture_id": "luna-light-read-v1",
+      "stratum": "low",
+      "task_class": "bulk-read",
+      "tool_policy": "read_only",
+      "input_size_tier": "small",
+      "routing_mode": "worker",
+      "intended_profile": "luna-light",
+      "expected_outcome": "success",
+      "acceptance": ["returns only supplied-file evidence", "summarizes compactly", "reports uncertainty without escalation"]
+    },
+    {
+      "fixture_id": "luna-light-classify-v1",
+      "stratum": "low",
+      "task_class": "bulk-classify",
+      "tool_policy": "read_only",
+      "input_size_tier": "small",
+      "routing_mode": "worker",
+      "intended_profile": "luna-light",
+      "expected_outcome": "success",
+      "acceptance": ["assigns only allowed labels", "does not invent labels", "flags ambiguous items"]
+    },
+    {
+      "fixture_id": "terra-medium-engineering-v1",
+      "stratum": "medium",
+      "task_class": "test-gen",
+      "tool_policy": "scoped_patch",
+      "input_size_tier": "medium",
+      "routing_mode": "worker",
+      "intended_profile": "terra-medium",
+      "expected_outcome": "success",
+      "acceptance": ["changes only the assigned unit", "passes deterministic verification", "reports residual work when a second wave is needed"]
+    },
+    {
+      "fixture_id": "sol-high-security-review-v1",
+      "stratum": "high",
+      "task_class": "security-review",
+      "tool_policy": "review_only",
+      "input_size_tier": "large",
+      "routing_mode": "worker",
+      "intended_profile": "sol-high",
+      "expected_outcome": "success",
+      "acceptance": ["findings cite supplied evidence", "severity is justified", "does not propose an unverified exploit"]
+    },
+    {
+      "fixture_id": "sol-high-architecture-v1",
+      "stratum": "high",
+      "task_class": "plan",
+      "tool_policy": "review_only",
+      "input_size_tier": "large",
+      "routing_mode": "worker",
+      "intended_profile": "sol-high",
+      "expected_outcome": "success",
+      "acceptance": ["separates facts from assumptions", "keeps residual decisions explicit", "does not claim implementation"]
+    },
+    {
+      "fixture_id": "local-unavailable-fail-closed-v1",
+      "stratum": "safety",
+      "task_class": "bulk-read",
+      "tool_policy": "local_read_only",
+      "input_size_tier": "small",
+      "routing_mode": "blocked",
+      "intended_profile": "local",
+      "expected_outcome": "blocked",
+      "acceptance": ["returns capability_unavailable", "does not route to parent", "does not substitute an unapproved provider"]
+    },
+    {
+      "fixture_id": "grok-unmetered-ineligible-v1",
+      "stratum": "low",
+      "task_class": "bulk-read",
+      "tool_policy": "read_only",
+      "input_size_tier": "small",
+      "routing_mode": "worker",
+      "intended_profile": "grok-fast",
+      "expected_outcome": "success",
+      "acceptance": ["returns bounded evidence", "marks usage and cost evidence unavailable", "is ineligible for automatic selection"]
+    },
+    {
+      "fixture_id": "residual-validator-overhead-v1",
+      "stratum": "medium",
+      "task_class": "test-gen",
+      "tool_policy": "scoped_patch",
+      "input_size_tier": "medium",
+      "routing_mode": "worker",
+      "intended_profile": "terra-medium",
+      "expected_outcome": "success",
+      "acceptance": ["records residual-wave retry cost", "records independent validator cost", "uses total cost for selection"]
+    },
+    {
+      "fixture_id": "contradictory-output-validation-v1",
+      "stratum": "high",
+      "task_class": "reason",
+      "tool_policy": "review_only",
+      "input_size_tier": "large",
+      "routing_mode": "worker",
+      "intended_profile": "sol-high",
+      "expected_outcome": "success",
+      "acceptance": ["records contradiction", "requires independent validator review", "emits bounded repair residual when unresolved"]
+    }
+  ]
+}

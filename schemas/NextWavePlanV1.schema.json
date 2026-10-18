@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://synapsegrid-labs.example/schemas/agentfanout/NextWavePlanV1.schema.json",
+  "title": "NextWavePlanV1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema", "run_id", "wave_id", "wave_index", "action", "reason",
+    "assignments", "remaining_delegable_tasks", "budget_remaining"
+  ],
+  "properties": {
+    "schema": {"const": "NextWavePlanV1"},
+    "run_id": {"type": "string", "pattern": "^run_[a-f0-9]{32}$"},
+    "wave_id": {"type": ["string", "null"]},
+    "wave_index": {"type": "integer", "minimum": 0},
+    "action": {"enum": ["dispatch_wave", "wait", "complete", "blocked"]},
+    "reason": {"type": "string", "minLength": 1},
+    "assignments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["task_id", "task", "worker_action", "worker_handle", "host_launch_record_required"],
+        "properties": {
+          "task_id": {"type": "string"},
+          "task": {
+            "type": "object",
+            "required": ["schema", "task_id", "scope", "launch_correlation_id"],
+            "properties": {
+              "schema": {"const": "WorkerTaskPacketV1"},
+              "task_id": {"type": "string", "pattern": "^task_[a-f0-9]{32}$"},
+              "scope": {"type": "string", "minLength": 1},
+              "launch_correlation_id": {"type": "string", "pattern": "^launch_[a-f0-9]{32}$"}
+            }
+          },
+          "worker_action": {"enum": ["spawn", "follow_up"]},
+          "recommended_worker_handle": {"type": ["string", "null"]},
+          "worker_handle": {"type": "string", "pattern": "^worker_[a-f0-9]{32}$"},
+          "host_launch_record_required": {"const": true}
+        }
+      }
+    },
+    "remaining_delegable_tasks": {"type": "integer", "minimum": 0},
+    "budget_remaining": {
+      "type": "object",
+      "required": ["waves", "workers", "cost_usd"],
+      "properties": {
+        "waves": {"type": "integer", "minimum": 0},
+        "workers": {"type": "integer", "minimum": 0},
+        "cost_usd": {"type": "number", "minimum": 0}
+      }
+    },
+    "parent_policy": {"type": "string"}
+  }
+}

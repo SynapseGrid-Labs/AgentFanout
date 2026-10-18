@@ -1,0 +1,12 @@
+{
+  "schema": "AgentFanoutDistributionProfileV1",
+  "profile": "codex-plugin",
+  "entrypoint": "plugins/agentfanout/.codex-plugin/plugin.json",
+  "portable": true,
+  "dependencies": ["python>=3.9", "codex-hooks"],
+  "minimum_tested_codex_version": "0.144.4",
+  "requires": ["codex-plugin-discovery", "hooks", "multi-agent"],
+  "enforcement": "hook_continuation_and_supported_tool_guard",
+  "claim_limit": "not_universal_anti_bypass",
+  "included": ["plugins/agentfanout/.codex-plugin/", "plugins/agentfanout/hooks/", "plugins/agentfanout/skills/"]
+}

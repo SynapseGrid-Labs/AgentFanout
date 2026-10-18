@@ -1,0 +1,18 @@
+{
+  "schema": "AgentFanoutObservabilityRubricV1",
+  "scale": {"minimum": 0, "maximum": 5, "meaning": "0=absent, 3=usable with material caveat, 5=verified fit"},
+  "criteria": [
+    {"id": "trace_hierarchy", "weight": 20, "question": "Can one run, wave, worker, result, validator, and terminal decision be traversed as a linked trace without raw prompts?"},
+    {"id": "usage_cost_latency_queryability", "weight": 20, "question": "Can run/wave/worker/provider/model/effort usage, cost, latency, residual count, and denial reason be filtered and aggregated?"},
+    {"id": "dataset_and_evaluation", "weight": 15, "question": "Can sanitized fixtures and validator outcomes be stored, versioned, compared, and evaluated without importing customer content?"},
+    {"id": "redaction_and_boundary", "weight": 15, "question": "Does the deployed route preserve AgentFanout allowlist sanitization, avoid prompt/tool-output export, and fail closed on unsafe configuration?"},
+    {"id": "retention_and_storage", "weight": 10, "question": "Can retention, deletion, storage growth, and a hard capacity limit be evidenced and operated privately?"},
+    {"id": "resource_and_operations", "weight": 10, "question": "Can local CPU/memory/disk/network dependency, upgrades, backup, and recovery be operated at the intended scale?"},
+    {"id": "integration_burden", "weight": 10, "question": "Can AgentFanout emit required data through a small, version-pinned adapter without duplicating control-plane authority?"}
+  ],
+  "decision_thresholds": {
+    "adopt": {"minimum_weighted_score": 80, "minimum_redaction_and_boundary": 4, "minimum_trace_hierarchy": 4},
+    "limited_pilot": {"minimum_weighted_score": 65, "minimum_redaction_and_boundary": 4},
+    "reject_or_defer": {"maximum_weighted_score": 64}
+  }
+}

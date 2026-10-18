@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "GrokCLISessionV1.schema.json",
+  "title": "GrokCLI prepared session; not execution authorization",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "process_epoch": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "task_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "model": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "effort": {
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ]
+    },
+    "evidence_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "role": {
+      "enum": [
+        "worker",
+        "validator"
+      ]
+    },
+    "input_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "binary_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "config_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "schema": {
+      "const": "GrokCLISessionV1"
+    },
+    "auth_kind": {
+      "const": "cached_token"
+    }
+  },
+  "required": [
+    "session_id",
+    "process_epoch",
+    "task_id",
+    "model",
+    "effort",
+    "evidence_id",
+    "role",
+    "input_sha256",
+    "binary_sha256",
+    "config_sha256",
+    "schema",
+    "auth_kind"
+  ]
+}

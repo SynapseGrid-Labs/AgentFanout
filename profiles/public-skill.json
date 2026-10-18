@@ -1,0 +1,15 @@
+{
+  "schema": "AgentFanoutDistributionProfileV1",
+  "profile": "public-skill",
+  "entrypoint": "SKILL.md",
+  "portable": true,
+  "dependencies": [],
+  "requires": ["skill-discovery", "native-agent-capability"],
+  "default_lazy_documents": [
+    "workflows/Activate.md",
+    "workflows/Wave.md",
+    "references/ParentBoundary.md",
+    "references/WhenNotToFanout.md"
+  ],
+  "excluded_by_default": ["agentfanout/", "scripts/", "providers/", "adapters/", "schemas/", "requirements.txt", "requirements.lock"]
+}

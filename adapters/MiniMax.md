@@ -1,6 +1,8 @@
 # MiniMax Adapter
 
-MiniMax is treated as an external worker provider. The main orchestrator remains in charge.
+MiniMax is a compatibility adapter and is disabled in the default registry. A
+host may explicitly enable disabled providers for a controlled compatibility
+run; the main orchestrator remains in charge.
 
 ## Best use
 
@@ -29,8 +31,11 @@ Tool-requiring MiniMax work uses the brokered tool agent, not the text-only
 review wrapper:
 
 ```bash
-bun ~/.pai/skills/MiniMax/Tools/MiniMaxAgent.ts --request-json - --json
+bun "$PAI_DIR/skills/MiniMax/Tools/MiniMaxAgent.ts" --request-json - --json
 ```
+
+Set `PAI_DIR` to the installation root when using this optional integration;
+AgentFanout core does not assume a particular home-directory layout.
 
 AgentFanout must include `runtime_launch.minimax_tool_agent` and a
 `ToolEnvelopeV1` payload in route output. The feature is enabled only when
@@ -38,10 +43,22 @@ AgentFanout must include `runtime_launch.minimax_tool_agent` and a
 return `fanout_blocked:minimax_tool_agent_disabled` instead of silently falling
 back to main-session execution.
 
+Tool envelopes require an explicit approved project root. They reject broad,
+sensitive, home, runtime-state, private-knowledge, and out-of-project roots.
+Read-only command profiles do not expose general interpreters or mutation flags.
+
 `MiniMaxExec.ts` remains the stable text-only wrapper for pure reviews and
 second opinions.
 
 Do not use `minimax-fast` or pass `MiniMaxExec --fast` unless the runtime has explicitly verified that the current MiniMax token plan supports `MiniMax-M2.7-highspeed`. In this environment the token plan does not support highspeed, so AgentFanout routes MiniMax workers to the default supported model selector.
+
+MiniMax provider mode is strict. Do not substitute Local, Codex, or the main
+session when the user selected `AgentFanout MiniMax`. A MiniMax worker run only
+counts as successful offload when it completes a bounded work unit and returns a
+successful compact result packet with evidence or scoped file changes. Provider
+invocation, partial file reads, denied tool calls, timeouts, and checklist-only
+responses are failures for offload accounting. After the provider repair budget
+is exhausted, report `fanout_blocked` instead of continuing locally.
 
 ## Routing rule
 
@@ -65,7 +82,7 @@ MiniMax workers must not receive:
 - destructive tasks
 - final synthesis responsibility
 
-MiniMax may receive brokered read-only OpsVault/repo/search tools or scoped
+MiniMax may receive brokered read-only knowledge-base/repository/search tools or scoped
 patch/test tools only through a declared `ToolEnvelopeV1`.
 
 ## Prompt packet
@@ -84,7 +101,7 @@ validator_required: true
 structural_validation_required: true
 runtime_launch:
   minimax_tool_agent:
-    command: bun ~/.pai/skills/MiniMax/Tools/MiniMaxAgent.ts --request-json - --json
+    command: bun $PAI_DIR/skills/MiniMax/Tools/MiniMaxAgent.ts --request-json - --json
     stdin_request: true
     required_flag: AGENT_FANOUT_MINIMAX_TOOL_AGENT=1
 tool_envelope: ToolEnvelopeV1

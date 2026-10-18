@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "title": "CoordinatorResourceBindingV1",
+  "required": [
+    "schema",
+    "reservation_id",
+    "owner_token",
+    "serving_epoch",
+    "identity_sha256",
+    "role",
+    "expires_at",
+    "cancellation_state",
+    "coordinator_attestation_sha256"
+  ],
+  "properties": {
+    "schema": {
+      "const": "CoordinatorResourceBindingV1"
+    },
+    "reservation_id": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$"
+    },
+    "owner_token": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "serving_epoch": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "identity_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "role": {
+      "enum": [
+        "worker",
+        "validator"
+      ]
+    },
+    "expires_at": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1000000000000.0
+    },
+    "cancellation_state": {
+      "enum": [
+        "none",
+        "uncertain",
+        "confirmed"
+      ]
+    },
+    "coordinator_attestation_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  }
+}

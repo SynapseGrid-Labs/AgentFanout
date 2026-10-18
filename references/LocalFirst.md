@@ -27,7 +27,10 @@ Local routing is preferred only when all gates pass.
 
 ## Fallback behavior
 
-When local-first fails, do not silently use local anyway. Route to the cheapest capable cloud/provider selector and record the reason:
+When local-first fails, do not silently use local anyway. In `AgentFanout Auto`,
+replan only to an already-approved capable worker provider and record the
+reason. In explicit `AgentFanout Local` mode, return `fanout_blocked`; do not
+substitute cloud or parent execution.
 
 ```yaml
 local_preferred: true
@@ -35,6 +38,9 @@ local_selected: false
 fallback_reason: context too large
 fallback_selector: current-balanced
 ```
+
+No Local failure permits the parent to perform the classified, researched, or
+implemented work. User approval does not override this fail-closed rule.
 
 ## Suggested local selector mapping
 
