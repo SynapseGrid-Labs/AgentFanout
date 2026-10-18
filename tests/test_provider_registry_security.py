@@ -37,7 +37,7 @@ class ProviderRegistrySecurityTests(unittest.TestCase):
         grok = load_registry()["providers"]["Grok"]
         self.assertEqual(grok["runtime_admission"], {
             "cli_scope": "model_discovery_only",
-            "credential_validation": "pinned_https_helper_offline_preflight",
+            "credential_validation": "dedicated_api_key_shape_and_binding_only",
             "inference_transport": "pinned_fixed_https_helper",
             "inference_origin": "https://api.x.ai",
             "chat_completions_model_families": ["grok-4.5"],

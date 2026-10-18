@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import errno
 import hashlib
 import json
 import os
@@ -15,6 +16,70 @@ from agentfanout.grok_probe import prepare_intent, prepare_invocation_intent, ru
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "scripts/grok-probe-sandbox.c"
+
+
+def probe_result(process):
+    stderr = process.stderr.decode(errors="replace")
+    # The diagnostic deliberately supports only reviewed Landlock ABIs. An
+    # explicit refusal is not a malformed observation or a passing sandbox run.
+    if (process.returncode == 125 and not process.stdout
+            and stderr == f"probe_boundary_unavailable:landlock_abi:{errno.ENOTSUP}\n"):
+        raise unittest.SkipTest("process-boundary observation unavailable: unsupported Landlock ABI")
+    if process.returncode:
+        raise AssertionError(f"probe helper exited {process.returncode}: {stderr}")
+    try:
+        return json.loads(process.stdout)
+    except (ValueError, UnicodeDecodeError) as exc:
+        raise AssertionError(f"probe helper returned invalid JSON: {stderr}") from exc
+
+
+class ProbeResultTests(unittest.TestCase):
+    def test_only_explicit_empty_unsupported_abi_refusal_is_unavailable(self):
+        refusal = f"probe_boundary_unavailable:landlock_abi:{errno.ENOTSUP}\n".encode()
+        with self.assertRaisesRegex(unittest.SkipTest, "unsupported Landlock ABI"):
+            probe_result(subprocess.CompletedProcess([], 125, b"", refusal))
+        for code, stdout, stderr in (
+                (125, b"unexpected child output", refusal),
+                (1, b"", refusal),
+                (125, b"", b"probe_boundary_unavailable:seccomp:1\n"),
+                (-31, b"", b"probe_boundary_enforced:landlock=4\n")):
+            with self.subTest(code=code, stdout=stdout, stderr=stderr):
+                with self.assertRaises(AssertionError):
+                    probe_result(subprocess.CompletedProcess([], code, stdout, stderr))
+
+    def test_missing_or_malformed_output_is_a_failure(self):
+        for stdout in (b"", b"not-json", b"\xff"):
+            with self.subTest(stdout=stdout):
+                with self.assertRaisesRegex(AssertionError, "invalid JSON"):
+                    probe_result(subprocess.CompletedProcess([], 0, stdout, b"synthetic diagnostic"))
+
+    def test_valid_observation_is_retained(self):
+        self.assertEqual(probe_result(subprocess.CompletedProcess([], 0, b'{"done":true}', b"")),
+                         {"done": True})
+
+
+class UnsupportedBoundaryTests(unittest.TestCase):
+    def test_unsupported_landlock_abis_deny_before_exec(self):
+        query = "int abi=syscall(SYS_landlock_create_ruleset,NULL,0,LANDLOCK_CREATE_RULESET_VERSION);"
+        source = SOURCE.read_text()
+        self.assertEqual(source.count(query), 1)
+        with tempfile.TemporaryDirectory(prefix="agentfanout-unsupported-boundary-") as temporary:
+            root = Path(temporary)
+            fixture = root / "fixture"
+            subprocess.run(["/usr/bin/cc", str(ROOT / "tests/grok_probe_fixture.c"), "-static", "-pthread",
+                            "-O2", "-Wall", "-Wextra", "-Werror", "-o", str(fixture)],
+                           capture_output=True, check=True, timeout=10)
+            for abi in (2, 5, 8):
+                with self.subTest(abi=abi):
+                    helper = root / f"boundary-{abi}"
+                    modified = source.replace(query, f"int abi={abi};")
+                    subprocess.run(["/usr/bin/cc", "-x", "c", "-", "-O2", "-Wall", "-Wextra", "-Werror", "-o", str(helper)],
+                                   input=modified.encode(), capture_output=True, check=True, timeout=10)
+                    p = subprocess.run([str(helper), str(fixture), str(root), "outside-secret", "50", "checks"],
+                                       input=b"", capture_output=True, timeout=3)
+                    self.assertEqual(p.returncode, 125)
+                    self.assertEqual(p.stderr, f"probe_boundary_unavailable:landlock_abi:{errno.ENOTSUP}\n".encode())
+                    self.assertFalse(p.stdout)
 
 
 class ProcessBoundaryTests(unittest.TestCase):
@@ -37,10 +102,8 @@ class ProcessBoundaryTests(unittest.TestCase):
             p = subprocess.run([str(cls.helper), str(cls.fixture), str(cls.workspace), str(cls.secret), str(fd.fileno()), "checks"],
                                input=b"", capture_output=True, timeout=10, pass_fds=(fd.fileno(),),
                                env={"HOME": str(cls.workspace / "home"), "PATH": ""})
-        cls.result = json.loads(p.stdout)
+        cls.result = probe_result(p)
         cls.stderr = p.stderr.decode()
-        if p.returncode:
-            raise AssertionError((p.returncode, cls.stderr))
 
     @classmethod
     def tearDownClass(cls):
@@ -198,17 +261,6 @@ class ProcessBoundaryTests(unittest.TestCase):
             self.assertEqual(subprocess.run(argv, capture_output=True, timeout=5).returncode, 2)
             self.assertFalse(path.exists())
             self.assertTrue(auth.with_name(auth.name+".consumed.json").exists())
-
-    def test_unsupported_landlock_abi_denies_before_exec(self):
-        modified = SOURCE.read_text().replace("int abi=syscall(SYS_landlock_create_ruleset,NULL,0,LANDLOCK_CREATE_RULESET_VERSION);", "int abi=2;")
-        helper = self.root / "unsupported-boundary"
-        subprocess.run(["/usr/bin/cc", "-x", "c", "-", "-O2", "-Wall", "-Wextra", "-Werror", "-o", str(helper)],
-                       input=modified.encode(), capture_output=True, check=True, timeout=10)
-        p = subprocess.run([str(helper), str(self.fixture), str(self.workspace)], input=b"", capture_output=True, timeout=3)
-        self.assertEqual(p.returncode, 125)
-        self.assertIn(b"landlock_abi", p.stderr)
-        self.assertFalse(p.stdout)
-
 
 if __name__ == "__main__":
     unittest.main()
