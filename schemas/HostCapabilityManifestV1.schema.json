@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "HostCapabilityManifestV1",
+  "type": "object",
+  "required": ["schema", "harness", "enforcement", "provider_adapters", "issued_at", "lifetime_policy"],
+  "properties": {
+    "schema": {"const": "HostCapabilityManifestV1"},
+    "harness": {"type": "object"},
+    "enforcement": {"type": "object"},
+    "provider_adapters": {"type": "array", "items": {"type": "object"}},
+    "issued_at": {"type": "string", "format": "date-time"},
+    "expires_at": {"type": "string", "format": "date-time"},
+    "lifetime_policy": {"enum": ["time_bound", "release_bound"]},
+    "attestation": {"type": "object"},
+    "manifest_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+  }
+}

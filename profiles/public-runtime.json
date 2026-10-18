@@ -1,0 +1,11 @@
+{
+  "schema": "AgentFanoutDistributionProfileV1",
+  "profile": "public-runtime",
+  "entrypoint": "scripts/agentfanout.py",
+  "portable": false,
+  "dependencies": ["Python 3.11+", "cryptography"],
+  "requires": ["exact project binding", "provider capability evidence"],
+  "includes": ["agentfanout/", "scripts/", "providers/", "adapters/", "schemas/", "runtime tests"],
+  "activation": "explicit operator request only",
+  "failure_policy": "fail closed for enforced runs"
+}

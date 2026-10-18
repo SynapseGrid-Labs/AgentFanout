@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://synapsegrid-labs.example/schemas/agentfanout/TaskUnitV1.schema.json",
+  "title": "TaskUnitV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema", "task_id", "title", "scope", "input_ref", "task_class",
+    "role", "status", "delegable", "dependencies", "allowed_paths",
+    "write_set", "requires_path_binding", "requires_write_binding", "provider_model", "launch_correlation_id", "reasoning_effort", "budgets",
+    "validator_required", "attempts"
+  ],
+  "properties": {
+    "schema": {"const": "TaskUnitV1"},
+    "task_id": {"type": "string", "pattern": "^task_[a-f0-9]{32}$"},
+    "title": {"type": "string", "minLength": 1, "maxLength": 200},
+    "scope": {"type": "string", "minLength": 1, "maxLength": 2000},
+    "input_ref": {"type": "string", "minLength": 1, "maxLength": 1000},
+    "input_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "input_bytes": {"type": "integer", "minimum": 0},
+    "objective_excerpt": {"type": "string", "maxLength": 500},
+    "task_class": {"type": "string", "minLength": 1, "maxLength": 100},
+    "role": {"enum": ["main", "explorer", "worker", "validator", "external-worker", "local-worker"]},
+    "status": {"enum": ["pending", "dispatched", "active", "completed", "blocked", "cancelled"]},
+    "delegable": {"type": "boolean"},
+    "dependencies": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "parent_task_id": {"type": ["string", "null"]},
+    "allowed_paths": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "write_set": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "requires_path_binding": {"type": "boolean"},
+    "requires_write_binding": {"type": "boolean"},
+    "provider_model": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provider", "profile", "selector", "ack_required"],
+      "properties": {
+        "provider": {"type": "string"},
+        "profile": {"enum": ["main", "fast", "balanced", "frontier"]},
+        "selector": {"type": ["string", "null"]},
+        "requested_alias": {"type": ["string", "null"]},
+        "resolved_model": {"type": ["string", "null"]},
+        "resolved_model_source": {"type": "string"},
+        "ack_required": {"type": "boolean"},
+        "relative_cost": {"type": ["number", "null"], "minimum": 0},
+        "relative_latency": {"type": ["number", "null"], "minimum": 0},
+        "max_risk": {"type": ["string", "null"]},
+        "capabilities": {"type": "array", "items": {"type": "string"}},
+        "task_classes": {"type": "array", "items": {"type": "string"}},
+        "reasoning_efforts": {"type": "array", "items": {"type": "string"}},
+        "requires_recent_eval": {"type": "boolean"}
+      }
+    },
+    "launch_correlation_id": {"type": ["string", "null"], "pattern": "^launch_[a-f0-9]{32}$"},
+    "reasoning_effort": {"enum": ["low", "medium", "high", "xhigh", "ultra"]},
+    "budgets": {
+      "type": "object",
+      "required": ["max_prompt_tokens", "max_output_tokens", "max_cost_usd"],
+      "properties": {
+        "max_prompt_tokens": {"type": "integer", "minimum": 1},
+        "max_output_tokens": {"type": "integer", "minimum": 1},
+        "max_cost_usd": {"type": "number", "minimum": 0}
+      }
+    },
+    "validator_required": {"type": "boolean"},
+    "recommended_worker_handle": {"type": ["string", "null"], "pattern": "^worker_[a-f0-9]{32}$"},
+    "reserved_cost_usd": {"type": "number", "minimum": 0},
+    "attempts": {"type": "integer", "minimum": 0},
+    "last_error": {"type": ["string", "null"]},
+    "created_at": {"type": "string", "format": "date-time"},
+    "updated_at": {"type": "string", "format": "date-time"}
+  }
+}

@@ -1,0 +1,101 @@
+{
+  "schema_version": 1,
+  "profiles": {
+    "public": {
+      "files": [
+        ".gitignore",
+        "CHANGELOG.md",
+        "CITATION.cff",
+        "CODE_OF_CONDUCT.md",
+        "CONTRIBUTING.md",
+        "CONTRIBUTORS.md",
+        "LICENSE",
+        "README.md",
+        "ROADMAP.md",
+        "SECURITY.md",
+        "SKILL.md",
+        "SUPPORT.md",
+        "VERSION",
+        "requirements.lock",
+        "requirements.txt"
+      ],
+      "directories": [
+        ".agents",
+        ".github",
+        "adapters",
+        "agentfanout",
+        "agents",
+        "assets",
+        "benchmarks",
+        "docs",
+        "experiments",
+        "integrations",
+        "plugins",
+        "providers",
+        "profiles",
+        "references",
+        "release",
+        "schemas",
+        "scripts",
+        "tests",
+        "workflows"
+      ]
+    },
+    "runtime": {
+      "files": [
+        ".gitignore",
+        "CHANGELOG.md",
+        "CITATION.cff",
+        "CODE_OF_CONDUCT.md",
+        "LICENSE",
+        "README.md",
+        "ROADMAP.md",
+        "SECURITY.md",
+        "SKILL.md",
+        "SUPPORT.md",
+        "VERSION",
+        "requirements.lock",
+        "requirements.txt"
+      ],
+      "directories": [
+        ".agents",
+        "adapters",
+        "agentfanout",
+        "agents",
+        "assets",
+        "benchmarks",
+        "docs",
+        "integrations",
+        "plugins",
+        "providers",
+        "profiles",
+        "references",
+        "release",
+        "schemas",
+        "scripts",
+        "tests",
+        "workflows"
+      ]
+    }
+  },
+  "exclude": [
+    ".agentfanout-manifest.json",
+    ".agentfanout-provenance.json",
+    ".git/**",
+    ".pytest_cache/**",
+    ".runtime/**",
+    "**/.DS_Store",
+    "**/.pytest_cache/**",
+    "**/__pycache__/**",
+    "**/*.local.*",
+    "**/*.pyc",
+    "**/*.pyo",
+    "**/*~",
+    "build/**",
+    "config/local/**",
+    "coverage/**",
+    "dist/**",
+    "overlays/**",
+    "runtime.local.*"
+  ]
+}

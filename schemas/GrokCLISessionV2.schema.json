@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "GrokCLISessionV2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "session_id",
+    "process_epoch",
+    "task_id",
+    "model",
+    "evidence_id",
+    "input_sha256",
+    "binary_sha256",
+    "config_sha256",
+    "wire_mapping_sha256",
+    "wire_binding_sha256",
+    "effort",
+    "auth_kind",
+    "role"
+  ],
+  "properties": {
+    "schema": {
+      "const": "GrokCLISessionV2"
+    },
+    "session_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "process_epoch": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "task_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "model": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "evidence_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "input_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "binary_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "config_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "wire_mapping_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "wire_binding_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "effort": {
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ]
+    },
+    "auth_kind": {
+      "const": "cached_token"
+    },
+    "role": {
+      "enum": [
+        "worker",
+        "validator"
+      ]
+    }
+  }
+}

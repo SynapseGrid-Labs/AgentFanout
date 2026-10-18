@@ -1,0 +1,317 @@
+{
+  "schema_version": 1,
+  "pilot_id": "agentfanout-v2-frozen-1",
+  "policy": {
+    "quality_tolerance": 0,
+    "cost_or_latency_improvement": 0.15,
+    "other_metric_max_regression": 0.05,
+    "astra_authorized": false,
+    "skipped_validator_audit": "all; separately accounted; included in totals"
+  },
+  "arms": [
+    {
+      "id": "baseline",
+      "features": [
+        "accounting"
+      ]
+    },
+    {
+      "id": "assignment",
+      "features": [
+        "accounting",
+        "assignment"
+      ]
+    },
+    {
+      "id": "validation_recovery",
+      "features": [
+        "accounting",
+        "assignment",
+        "validation",
+        "recovery"
+      ]
+    },
+    {
+      "id": "model",
+      "features": [
+        "accounting",
+        "assignment",
+        "validation",
+        "recovery",
+        "model_selection"
+      ]
+    },
+    {
+      "id": "lifecycle_hook",
+      "features": [
+        "accounting",
+        "assignment",
+        "validation",
+        "recovery",
+        "model_selection",
+        "lifecycle",
+        "hook"
+      ]
+    }
+  ],
+  "tasks": [
+    {
+      "id": "trivial_slug",
+      "category": "trivial",
+      "prompt": "Implement slug(text) converting ASCII words to lowercase hyphen-separated words, removing punctuation and collapsing whitespace.",
+      "fixtures": {
+        "solution.py": "def slug(text):\n    raise NotImplementedError\n"
+      },
+      "acceptance": "assert slug(' Hello,   WORLD! ') == 'hello-world'; assert slug('') == ''; assert slug('A---B') == 'a-b'",
+      "validators": [
+        "independent acceptance review",
+        "regression checks",
+        "scope and safety review"
+      ],
+      "acceptance_checks": [
+        {
+          "id": "trivial_slug_contract",
+          "kind": "python_stdlib_assertions",
+          "code": "import copy, json, runpy, tempfile\nfrom pathlib import Path\n\ndef raises(kind, fn, *args):\n    try:\n        fn(*args)\n    except kind:\n        return\n    raise AssertionError('Expected rejection')\n\nm = runpy.run_path('solution.py'); slug = m['slug']\nfor source, expected in [(' Hello,   WORLD! ', 'hello-world'), ('',''), ('A---B','a-b'), ('One\\tTWO\\nthree','one-two-three'), ('!!!','')]:\n    assert slug(source) == expected\n"
+        }
+      ]
+    },
+    {
+      "id": "trivial_config",
+      "category": "trivial",
+      "prompt": "Fix the JSON configuration without changing its values.",
+      "fixtures": {
+        "config.json": "{\"retries\": 3, \"enabled\": true,}\n"
+      },
+      "acceptance": "JSON parses; retries equals integer 3; enabled equals true; no additional keys",
+      "validators": [
+        "independent acceptance review",
+        "regression checks",
+        "scope and safety review"
+      ],
+      "acceptance_checks": [
+        {
+          "id": "trivial_config_contract",
+          "kind": "python_stdlib_assertions",
+          "code": "import copy, json, runpy, tempfile\nfrom pathlib import Path\n\ndef raises(kind, fn, *args):\n    try:\n        fn(*args)\n    except kind:\n        return\n    raise AssertionError('Expected rejection')\n\ndata = json.loads(Path('config.json').read_text())\nassert data == {'retries':3,'enabled':True}\nassert type(data['retries']) is int and data['enabled'] is True\n"
+        }
+      ]
+    },
+    {
+      "id": "bounded_csv",
+      "category": "bounded",
+      "prompt": "Implement totals(text): parse CSV with headers account,amount and sum Decimal amounts by account, including quoted account names.",
+      "fixtures": {
+        "solution.py": "def totals(text):\n    raise NotImplementedError\n",
+        "input.csv": "account,amount\nalpha,1.10\n\"beta, west\",2.00\nalpha,-0.10\n"
+      },
+      "acceptance": "alpha total Decimal('1.00'); beta, west Decimal('2.00'); header-only returns {}; malformed amounts raise ValueError",
+      "validators": [
+        "independent acceptance review",
+        "regression checks",
+        "scope and safety review"
+      ],
+      "acceptance_checks": [
+        {
+          "id": "bounded_csv_contract",
+          "kind": "python_stdlib_assertions",
+          "code": "import copy, json, runpy, tempfile\nfrom pathlib import Path\n\ndef raises(kind, fn, *args):\n    try:\n        fn(*args)\n    except kind:\n        return\n    raise AssertionError('Expected rejection')\n\nfrom decimal import Decimal\ntotals = runpy.run_path('solution.py')['totals']\nassert totals(Path('input.csv').read_text()) == {'alpha':Decimal('1.00'),'beta, west':Decimal('2.00')}\nassert all(isinstance(v, Decimal) for v in totals(Path('input.csv').read_text()).values())\nassert totals('account,amount\\n') == {}\nraises(ValueError, totals, 'account,amount\\nx,nope\\n')\n"
+        }
+      ]
+    },
+    {
+      "id": "bounded_cache",
+      "category": "bounded",
+      "prompt": "Implement Cache(capacity) with get(key) returning None for missing entries and put(key,value), using least recently used eviction. Reject capacity below 1.",
+      "fixtures": {
+        "solution.py": "class Cache:\n    pass\n"
+      },
+      "acceptance": "Capacity two: put a,b; get a; put c evicts b; updating key preserves size; capacity zero raises ValueError",
+      "validators": [
+        "independent acceptance review",
+        "regression checks",
+        "scope and safety review"
+      ],
+      "acceptance_checks": [
+        {
+          "id": "bounded_cache_contract",
+          "kind": "python_stdlib_assertions",
+          "code": "import copy, json, runpy, tempfile\nfrom pathlib import Path\n\ndef raises(kind, fn, *args):\n    try:\n        fn(*args)\n    except kind:\n        return\n    raise AssertionError('Expected rejection')\n\nCache = runpy.run_path('solution.py')['Cache']\nraises(ValueError, Cache, 0)\ncache = Cache(2)\ncache.put('a',1); cache.put('b',2)\nassert cache.get('a') == 1\ncache.put('c',3)\nassert cache.get('b') is None and cache.get('a') == 1\ncache.put('a',4); cache.put('d',5)\nassert cache.get('a') == 4 and cache.get('c') is None and cache.get('d') == 5\n"
+        }
+      ]
+    },
+    {
+      "id": "debug_timezone",
+      "category": "engineering",
+      "prompt": "Fix daily_total(rows, day): timestamps are ISO8601 with explicit offsets; sum integer values whose UTC calendar date equals day. Reject naive timestamps.",
+      "fixtures": {
+        "solution.py": "def daily_total(rows, day):\n    return sum(v for stamp,v in rows if stamp[:10] == day)\n",
+        "cases.json": "[[\"2026-01-01T23:30:00-02:00\",5],[\"2026-01-02T01:00:00+02:00\",7]]"
+      },
+      "acceptance": "For supplied rows Jan 1 total 7 and Jan 2 total 5; Z accepted; naive timestamps rejected; input not mutated",
+      "validators": [
+        "independent acceptance review",
+        "regression checks",
+        "scope and safety review"
+      ],
+      "acceptance_checks": [
+        {
+          "id": "debug_timezone_contract",
+          "kind": "python_stdlib_assertions",
+          "code": "import copy, json, runpy, tempfile\nfrom pathlib import Path\n\ndef raises(kind, fn, *args):\n    try:\n        fn(*args)\n    except kind:\n        return\n    raise AssertionError('Expected rejection')\n\ndaily_total = runpy.run_path('solution.py')['daily_total']\nrows = json.loads(Path('cases.json').read_text()); original = copy.deepcopy(rows)\nassert daily_total(rows,'2026-01-01') == 7\nassert daily_total(rows,'2026-01-02') == 5\nassert daily_total([('2026-01-01T00:00:00Z',3)],'2026-01-01') == 3\nraises(ValueError,daily_total,[('2026-01-01T00:00:00',3)],'2026-01-01')\nassert rows == original\n"
+        }
+      ]
+    },
+    {
+      "id": "debug_atomic",
+      "category": "engineering",
+      "prompt": "Implement write_config(path,data): serialize JSON, atomically replace destination using a same-directory temporary file, preserve old file on serialization failure and remove temporary files on failure. Use os.replace (not an imported alias) for the atomic replacement so a reproducible failure can be injected.",
+      "fixtures": {
+        "solution.py": "def write_config(path, data):\n    open(path, 'w').write(str(data))\n",
+        "config.json": "{\"stable\":true}\n"
+      },
+      "acceptance": "Valid JSON roundtrip; serialization failure leaves original bytes; replacement failure cleans temp; no partially written destination",
+      "validators": [
+        "independent acceptance review",
+        "regression checks",
+        "scope and safety review"
+      ],
+      "acceptance_checks": [
+        {
+          "id": "debug_atomic_contract",
+          "kind": "python_stdlib_assertions",
+          "code": "import copy, json, runpy, tempfile\nfrom pathlib import Path\n\ndef raises(kind, fn, *args):\n    try:\n        fn(*args)\n    except kind:\n        return\n    raise AssertionError('Expected rejection')\n\nimport importlib.util\nfrom unittest.mock import patch\nspec = importlib.util.spec_from_file_location('candidate', 'solution.py')\ncandidate = importlib.util.module_from_spec(spec); spec.loader.exec_module(candidate)\nwith tempfile.TemporaryDirectory() as directory:\n    target = Path(directory)/'config.json'; target.write_text('{\"stable\":true}')\n    candidate.write_config(target, {'a':[1,2]})\n    assert json.loads(target.read_text()) == {'a':[1,2]}\n    before = target.read_bytes()\n    raises((TypeError,ValueError),candidate.write_config,target,{'x':object()})\n    assert target.read_bytes() == before and sorted(p.name for p in Path(directory).iterdir()) == ['config.json']\n    with patch('os.replace', side_effect=OSError('injected replacement failure')):\n        # Freeze the contract to os.replace so failure injection is reproducible.\n        raises(OSError,candidate.write_config,target,{'new':1})\n    assert target.read_bytes() == before and sorted(p.name for p in Path(directory).iterdir()) == ['config.json']\n"
+        }
+      ]
+    },
+    {
+      "id": "debug_queue",
+      "category": "engineering",
+      "prompt": "Implement Queue with enqueue(id,payload), claim(), finish(id). Duplicate IDs never create additional jobs, including after finish; claim returns next pending (id,payload) once or None.",
+      "fixtures": {
+        "solution.py": "class Queue:\n    pass\n"
+      },
+      "acceptance": "FIFO; duplicate pending/inflight/completed IDs ignored; finish only inflight IDs else ValueError; two claims do not return same job",
+      "validators": [
+        "independent acceptance review",
+        "regression checks",
+        "scope and safety review"
+      ],
+      "acceptance_checks": [
+        {
+          "id": "debug_queue_contract",
+          "kind": "python_stdlib_assertions",
+          "code": "import copy, json, runpy, tempfile\nfrom pathlib import Path\n\ndef raises(kind, fn, *args):\n    try:\n        fn(*args)\n    except kind:\n        return\n    raise AssertionError('Expected rejection')\n\nQueue = runpy.run_path('solution.py')['Queue']; q = Queue()\nq.enqueue('a',1); q.enqueue('b',2); q.enqueue('a',9)\nassert q.claim() == ('a',1)\nq.enqueue('a',8)\nassert q.claim() == ('b',2) and q.claim() is None\nq.finish('a'); q.enqueue('a',7)\nassert q.claim() is None\nraises(ValueError,q.finish,'missing')\nraises(ValueError,q.finish,'a')\n"
+        }
+      ]
+    },
+    {
+      "id": "parallel_contract",
+      "category": "parallel",
+      "prompt": "Two independent components: implement encode/decode for UTF8 text using base64 in codec.py, and implement normalize_email in email.py (trim, lowercase, require exactly one @ and nonempty parts). Integrate tests for both.",
+      "fixtures": {
+        "codec.py": "# implement encode(text), decode(text)\n",
+        "email.py": "# implement normalize_email(text)\n"
+      },
+      "acceptance": "Unicode roundtrip; empty roundtrip; malformed base64 rejects; invalid emails reject; both components tested independently",
+      "validators": [
+        "independent acceptance review",
+        "regression checks",
+        "scope and safety review"
+      ],
+      "acceptance_checks": [
+        {
+          "id": "parallel_contract_contract",
+          "kind": "python_stdlib_assertions",
+          "code": "import copy, json, runpy, tempfile\nfrom pathlib import Path\n\ndef raises(kind, fn, *args):\n    try:\n        fn(*args)\n    except kind:\n        return\n    raise AssertionError('Expected rejection')\n\ncodec = runpy.run_path('codec.py'); email = runpy.run_path('email.py')['normalize_email']\nfor value in ('','hello','caf\\u00e9 \\U0001f680'):\n    assert codec['decode'](codec['encode'](value)) == value\nraises((ValueError,TypeError),codec['decode'],'%%%!')\nassert email('  USER@Example.COM ') == 'user@example.com'\nfor bad in ('none','a@@b','@b','a@',''):\n    raises(ValueError,email,bad)\n"
+        }
+      ]
+    },
+    {
+      "id": "parallel_reports",
+      "category": "parallel",
+      "prompt": "Analyze two independent datasets and write report.json with sales totals per SKU and incident counts by severity. Use standard-library decimal arithmetic for sales; serialize totals as two-decimal strings.",
+      "fixtures": {
+        "sales.csv": "sku,quantity,price\na,2,1.25\nb,3,2.00\na,-1,1.25\n",
+        "incidents.json": "[{\"severity\":\"high\"},{\"severity\":\"low\"},{\"severity\":\"high\"}]"
+      },
+      "acceptance": "report sales equals {a:1.25,b:6.00} as strings; incidents equals {high:2,low:1}; sources unchanged",
+      "validators": [
+        "independent acceptance review",
+        "regression checks",
+        "scope and safety review"
+      ],
+      "acceptance_checks": [
+        {
+          "id": "parallel_reports_contract",
+          "kind": "python_stdlib_assertions",
+          "code": "import copy, json, runpy, tempfile\nfrom pathlib import Path\n\ndef raises(kind, fn, *args):\n    try:\n        fn(*args)\n    except kind:\n        return\n    raise AssertionError('Expected rejection')\n\nreport = json.loads(Path('report.json').read_text())\nassert report == {'sales':{'a':'1.25','b':'6.00'},'incidents':{'high':2,'low':1}}\nassert Path('sales.csv').read_text() == 'sku,quantity,price\\na,2,1.25\\nb,3,2.00\\na,-1,1.25\\n'\nassert Path('incidents.json').read_text() == '[{\"severity\":\"high\"},{\"severity\":\"low\"},{\"severity\":\"high\"}]'\n"
+        }
+      ]
+    },
+    {
+      "id": "dependent_reuse",
+      "category": "dependent",
+      "prompt": "First implement parse_record(line) for key=integer, rejecting malformed lines; then reuse it in sum_records(lines) which sums values by key. Preserve parser and its tests while integrating aggregator.",
+      "fixtures": {
+        "solution.py": "def parse_record(line):\n    raise NotImplementedError\n\ndef sum_records(lines):\n    raise NotImplementedError\n"
+      },
+      "acceptance": "Whitespace stripped; exactly one =; nonempty key; signed integers; repeated keys summed; bad records raise ValueError; aggregator invokes parser",
+      "validators": [
+        "independent acceptance review",
+        "regression checks",
+        "scope and safety review"
+      ],
+      "acceptance_checks": [
+        {
+          "id": "dependent_reuse_contract",
+          "kind": "python_stdlib_assertions",
+          "code": "import copy, json, runpy, tempfile\nfrom pathlib import Path\n\ndef raises(kind, fn, *args):\n    try:\n        fn(*args)\n    except kind:\n        return\n    raise AssertionError('Expected rejection')\n\nimport importlib.util\nspec = importlib.util.spec_from_file_location('candidate','solution.py')\ncandidate = importlib.util.module_from_spec(spec); spec.loader.exec_module(candidate)\nassert candidate.parse_record(' x = -2 ') == ('x',-2)\nfor bad in ('x=1=2','=3','x=no','x'):\n    raises(ValueError,candidate.parse_record,bad)\nassert candidate.sum_records(['a=1','a=2','b=-1']) == {'a':3,'b':-1}\nraises(ValueError,candidate.sum_records,['a=1','bad'])\ncalls = []\noriginal = candidate.parse_record\ndef tracked(line):\n    calls.append(line)\n    return original(line)\ncandidate.parse_record = tracked\nassert candidate.sum_records(['z=2']) == {'z':2} and calls == ['z=2']\n"
+        }
+      ]
+    },
+    {
+      "id": "high_transfer",
+      "category": "high_consequence",
+      "prompt": "Implement transfer(accounts, source, dest, cents, request_id, ledger): integer-cent transfers idempotent by request ID. Invalid/insufficient/self transfers reject without mutation; duplicate matching request returns unchanged, conflicting duplicate rejects. No network or real funds.",
+      "fixtures": {
+        "solution.py": "def transfer(accounts, source, dest, cents, request_id, ledger):\n    raise NotImplementedError\n",
+        "accounts.json": "{\"a\":1000,\"b\":200}"
+      },
+      "acceptance": "Money conserved; bool/float/nonpositive cents reject; missing accounts reject; failures leave both mappings unchanged; replay no debit; conflicting replay rejects",
+      "validators": [
+        "independent acceptance review",
+        "regression checks",
+        "scope and safety review"
+      ],
+      "acceptance_checks": [
+        {
+          "id": "high_transfer_contract",
+          "kind": "python_stdlib_assertions",
+          "code": "import copy, json, runpy, tempfile\nfrom pathlib import Path\n\ndef raises(kind, fn, *args):\n    try:\n        fn(*args)\n    except kind:\n        return\n    raise AssertionError('Expected rejection')\n\ntransfer = runpy.run_path('solution.py')['transfer']\naccounts = {'a':1000,'b':200}; ledger = {}\ntransfer(accounts,'a','b',100,'r1',ledger)\nassert accounts == {'a':900,'b':300} and sum(accounts.values()) == 1200\nbefore = copy.deepcopy((accounts,ledger))\ntransfer(accounts,'a','b',100,'r1',ledger)\nassert (accounts,ledger) == before\nfor source,dest,cents,rid in [('a','b',101,'r1'),('a','b',True,'x'),('a','b',1.5,'x'),('a','b',0,'x'),('a','b',-1,'x'),('a','b',901,'x'),('a','a',1,'x'),('missing','b',1,'x'),('a','missing',1,'x')]:\n    raises((ValueError,TypeError),transfer,accounts,source,dest,cents,rid,ledger)\n    assert (accounts,ledger) == before\n"
+        }
+      ]
+    },
+    {
+      "id": "high_path",
+      "category": "high_consequence",
+      "prompt": "Implement resolve_member(root, member) for untrusted archive paths: return safe path under root, reject traversal, absolute, Windows drive/UNC paths, and any existing symlink component escaping root. Do not extract or delete anything.",
+      "fixtures": {
+        "solution.py": "def resolve_member(root, member):\n    raise NotImplementedError\n"
+      },
+      "acceptance": "Reject ../x, /x, C:\\\\x, UNC and backslash traversal cross-platform; permit nested relative file; reject escape through existing symlink; no filesystem mutation",
+      "validators": [
+        "independent acceptance review",
+        "regression checks",
+        "scope and safety review"
+      ],
+      "acceptance_checks": [
+        {
+          "id": "high_path_contract",
+          "kind": "python_stdlib_assertions",
+          "code": "import copy, json, runpy, tempfile\nfrom pathlib import Path\n\ndef raises(kind, fn, *args):\n    try:\n        fn(*args)\n    except kind:\n        return\n    raise AssertionError('Expected rejection')\n\nresolve_member = runpy.run_path('solution.py')['resolve_member']\nwith tempfile.TemporaryDirectory() as directory:\n    base = Path(directory); root = base/'root'; root.mkdir(); outside = base/'outside'; outside.mkdir()\n    (root/'escape').symlink_to(outside,target_is_directory=True)\n    before = sorted(str(p.relative_to(base)) for p in base.rglob('*'))\n    for bad in ('../x','/x','C:\\\\x','\\\\\\\\server\\\\share','..\\\\x','escape/file'):\n        raises(ValueError,resolve_member,root,bad)\n    assert Path(resolve_member(root,'nested/file')).resolve() == (root/'nested/file').resolve()\n    assert sorted(str(p.relative_to(base)) for p in base.rglob('*')) == before\n"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ProjectBindingV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "source", "requested_root", "resolved_root", "root_sha256", "vcs", "vcs_root", "policy_digest", "cwd_relation", "created_at"],
+  "properties": {
+    "schema": {"const": "ProjectBindingV1"},
+    "source": {"enum": ["explicit_cli", "explicit_worktree_discovery", "compatibility_environment"]},
+    "requested_root": {"type": "string", "minLength": 1},
+    "resolved_root": {"type": "string", "minLength": 1},
+    "root_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "vcs": {"enum": ["git", "none"]},
+    "vcs_root": {"type": "string", "minLength": 1},
+    "policy_digest": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "cwd_relation": {"enum": ["inside", "outside"]},
+    "created_at": {"type": "string", "format": "date-time"}
+  }
+}

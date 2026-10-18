@@ -14,7 +14,7 @@ The main orchestrator must remove inherited lines containing these before a prom
 
 - voice server calls
 - TTS
-- `localhost:8888`
+- localhost notification endpoints on any numeric port
 - `/notify`
 - `voice_id`
 - `voice_enabled`

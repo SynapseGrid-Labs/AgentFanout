@@ -1,0 +1,8 @@
+{
+  "name": "agentfanout",
+  "version": "0.4.0-rc.1",
+  "description": "Explicit task-scoped native Grok fanout; optional strict lane requires conformance.",
+  "skills": ["skills/agent-fanout"],
+  "hooks": {},
+  "mcpServers": {}
+}

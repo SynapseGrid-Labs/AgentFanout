@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://synapsegrid-labs.example/schemas/agentfanout/NativeCapabilityHandshakeV1.schema.json",
+  "title": "NativeCapabilityHandshakeV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "provider", "spawn", "wait", "follow_up", "cancel", "result_callback", "launch_acknowledgement", "model_selection", "reasoning_selection", "enforcement"],
+  "properties": {
+    "schema": {"const": "NativeCapabilityHandshakeV1"},
+    "provider": {"type": "string", "minLength": 1},
+    "spawn": {"type": "boolean"},
+    "wait": {"type": "boolean"},
+    "follow_up": {"type": "boolean"},
+    "cancel": {"type": "boolean"},
+    "result_callback": {"type": "boolean"},
+    "launch_acknowledgement": {"type": "boolean"},
+    "model_selection": {"type": "boolean"},
+    "reasoning_selection": {"type": "boolean"},
+    "enforcement": {"enum": ["advisory", "harness_enforced", "runner_enforced"]}
+  }
+}

@@ -1,0 +1,300 @@
+{
+  "schema": "ProviderRegistryV1",
+  "version": 1,
+  "provider_tie_break_order": ["Codex", "Grok", "Local", "MiniMax", "Claude"],
+  "native_capabilities": {
+    "schema": "NativeCapabilityHandshakeV1",
+    "Codex": {
+      "primary_public_path": "host_native_agents",
+      "strict_runtime_path": "optional_runtime",
+      "model_selection": "host_reported",
+      "reasoning_selection": "host_reported",
+      "enforcement": "host_reported"
+    },
+    "Grok": {"primary_public_path": "host_provider_capability", "strict_runtime_path": "optional_runtime"},
+    "Local": {"primary_public_path": "host_provider_capability", "strict_runtime_path": "optional_runtime"}
+  },
+  "reasoning_aliases": {
+    "light": "low",
+    "low": "low",
+    "medium": "medium",
+    "high": "high",
+    "extra high": "xhigh",
+    "extra-high": "xhigh",
+    "extra_high": "xhigh",
+    "xhigh": "xhigh",
+    "max": "max",
+    "ultra": "ultra"
+  },
+  "requested_model_aliases": {
+    "luna": {"provider": "Codex", "profile": "fast"},
+    "terra": {"provider": "Codex", "profile": "balanced"},
+    "sol": {"provider": "Codex", "profile": "frontier"},
+    "astra": {"provider": "Codex", "profile": "astra"}
+  },
+  "providers": {
+    "GrokCLI": {
+      "enabled": false,
+      "explicit_diagnostic_routing": true,
+      "retired": false,
+      "adapter": "docs/grok-subscription-contract.md",
+      "mode": "grok_cli_subscription_acp",
+      "runtime_admission": {
+        "required_gate": "installed_binary_session_auth_no_tool_bootstrap_usage_spending",
+        "strict_runner_available": false,
+        "fresh_sessions_only": true,
+        "fallback_allowed": false
+      },
+      "profiles": {
+        "fast": {
+          "selector": "grok-cli-explicit",
+          "relative_cost": 1.0,
+          "relative_latency": 1.0,
+          "max_risk": "low",
+          "task_classes": [
+            "bulk-read",
+            "bulk-classify"
+          ],
+          "reasoning_efforts": [
+            "low"
+          ],
+          "explicit_only": true,
+          "capabilities": []
+        }
+      }
+    },
+    "Codex": {
+      "enabled": false,
+      "explicit_diagnostic_routing": true,
+      "retired": false,
+      "adapter": "adapters/Codex.md",
+      "availability_env": "AGENT_FANOUT_CODEX_SUBAGENTS",
+      "runtime_admission": {
+        "required_gate": "trusted_real_provider_no_tool_attestation_not_bundled",
+        "synthetic_transport_probe": "diagnostic_only",
+        "exact_model_bound": true,
+        "ephemeral_only": true,
+        "strict_runner_available": false,
+        "tested_cli_0.144.1": "blocked"
+      },
+      "launch_overhead_input_tokens": 14500,
+      "launch_overhead_source": "sanitized-live-smoke-2026-07-10-provisional",
+      "profiles": {
+        "fast": {
+          "selector": "current-fast-mini",
+          "resolved_model_env": "AGENT_FANOUT_CODEX_FAST_MODEL",
+          "relative_cost": 0.25,
+          "relative_latency": 0.35,
+          "max_risk": "medium",
+          "task_classes": ["bulk-read", "bulk-classify", "data-xform", "creative"],
+          "reasoning_efforts": ["low", "medium", "high", "xhigh", "ultra"],
+          "capabilities": ["read", "classify", "summarize", "bounded_review"]
+        },
+        "balanced": {
+          "selector": "current-balanced",
+          "resolved_model_env": "AGENT_FANOUT_CODEX_BALANCED_MODEL",
+          "relative_cost": 0.6,
+          "relative_latency": 0.6,
+          "max_risk": "high",
+          "task_classes": ["bulk-read", "bulk-classify", "data-xform", "creative", "debug", "test-gen", "refactor"],
+          "reasoning_efforts": ["low", "medium", "high", "xhigh", "ultra"],
+          "capabilities": ["read", "debug_analysis", "review", "test_plan", "patch_proposal"]
+        },
+        "frontier": {
+          "selector": "current-frontier",
+          "resolved_model_env": "AGENT_FANOUT_CODEX_FRONTIER_MODEL",
+          "relative_cost": 1.0,
+          "relative_latency": 1.0,
+          "max_risk": "critical",
+          "task_classes": ["*"],
+          "reasoning_efforts": ["low", "medium", "high", "xhigh", "ultra"],
+          "capabilities": ["architecture", "security_review", "complex_debug_analysis", "synthesis_review"],
+          "forbidden_model_ids": ["gpt-6-astra"]
+        },
+        "astra": {
+          "selector": "astra-explicit",
+          "resolved_model_env": "AGENT_FANOUT_CODEX_ASTRA_MODEL",
+          "relative_cost": 2.5,
+          "relative_latency": 1.0,
+          "max_risk": "critical",
+          "task_classes": ["*"],
+          "reasoning_efforts": ["low", "medium", "high", "xhigh", "max"],
+          "capabilities": ["architecture", "security_review", "complex_debug_analysis", "synthesis_review"],
+          "explicit_only": true,
+          "required_model_id": "gpt-6-astra",
+          "max_parallel_workers": 1
+        }
+      }
+    },
+    "Grok": {
+      "enabled": true,
+      "retired": false,
+      "adapter": "adapters/Grok.md",
+      "availability_env": "AGENT_FANOUT_GROK_AVAILABLE",
+      "runtime_admission": {
+        "cli_scope": "model_discovery_only",
+        "credential_validation": "dedicated_api_key_shape_and_binding_only",
+        "inference_transport": "pinned_fixed_https_helper",
+        "inference_origin": "https://api.x.ai",
+        "chat_completions_model_families": ["grok-4.5"],
+        "structured_output_contract": "strict_json_schema_worker_and_validator_packets",
+        "tools_field": "absent",
+        "functions_field": "absent",
+        "proxies": "disabled",
+        "redirects": "disabled",
+        "strict_lane": "available_only_after_auth_and_helper_preflight"
+      },
+      "launch_overhead_input_tokens": 10162,
+      "launch_overhead_source": "sanitized-live-direct-https-smoke-2026-07-11-conservative-total-token-floor",
+      "profiles": {
+        "fast": {
+          "selector": "grok-fast",
+          "resolved_model_env": "AGENT_FANOUT_GROK_FAST_MODEL",
+          "relative_cost": 0.3,
+          "relative_latency": 0.35,
+          "max_risk": "medium",
+          "task_classes": ["bulk-read", "bulk-classify", "data-xform", "creative"],
+          "reasoning_efforts": ["low"],
+          "capabilities": ["bounded_text_read", "classify", "summarize", "transform"]
+        },
+        "balanced": {
+          "selector": "grok-balanced",
+          "resolved_model_env": "AGENT_FANOUT_GROK_BALANCED_MODEL",
+          "relative_cost": 0.65,
+          "relative_latency": 0.65,
+          "max_risk": "high",
+          "task_classes": ["bulk-read", "bulk-classify", "data-xform", "creative", "debug"],
+          "reasoning_efforts": ["medium"],
+          "capabilities": ["bounded_text_analysis", "review", "debug_analysis"]
+        },
+        "frontier": {
+          "selector": "grok-frontier",
+          "resolved_model_env": "AGENT_FANOUT_GROK_FRONTIER_MODEL",
+          "relative_cost": 1.0,
+          "relative_latency": 1.0,
+          "max_risk": "critical",
+          "task_classes": ["bulk-read", "debug", "plan", "reason", "security-review"],
+          "reasoning_efforts": ["high"],
+          "capabilities": ["bounded_architecture_review", "security_review", "adversarial_review"]
+        }
+      }
+    },
+    "Claude": {
+      "enabled": false,
+      "retired": true,
+      "adapter": "adapters/Claude.md",
+      "availability_env": "AGENT_FANOUT_CLAUDE_AVAILABLE",
+      "profiles": {
+        "fast": {
+          "selector": "claude-fast",
+          "resolved_model_env": "AGENT_FANOUT_CLAUDE_FAST_MODEL",
+          "relative_cost": 0.3,
+          "relative_latency": 0.4,
+          "max_risk": "medium",
+          "task_classes": ["bulk-read", "bulk-classify", "data-xform", "creative"],
+          "reasoning_efforts": ["low"],
+          "capabilities": ["read", "summarize", "classify"]
+        },
+        "balanced": {
+          "selector": "claude-balanced",
+          "resolved_model_env": "AGENT_FANOUT_CLAUDE_BALANCED_MODEL",
+          "relative_cost": 0.7,
+          "relative_latency": 0.7,
+          "max_risk": "high",
+          "task_classes": ["bulk-read", "bulk-classify", "data-xform", "creative", "debug", "test-gen", "refactor"],
+          "reasoning_efforts": ["medium"],
+          "capabilities": ["review", "design", "bounded_edit"]
+        },
+        "frontier": {
+          "selector": "claude-frontier",
+          "resolved_model_env": "AGENT_FANOUT_CLAUDE_FRONTIER_MODEL",
+          "relative_cost": 1.0,
+          "relative_latency": 1.0,
+          "max_risk": "critical",
+          "task_classes": ["*"],
+          "reasoning_efforts": ["high", "xhigh", "ultra"],
+          "capabilities": ["architecture", "security_review", "deep_reasoning"]
+        }
+      }
+    },
+    "Local": {
+      "enabled": true,
+      "retired": false,
+      "adapter": "adapters/LocalLLM.md",
+      "availability_env": "AGENT_FANOUT_LOCAL_AVAILABLE",
+      "launch_overhead_input_tokens": null,
+      "launch_overhead_source": "unverified",
+      "profiles": {
+        "fast": {
+          "selector": "local-worker",
+          "resolved_model_env": "AGENT_FANOUT_LOCAL_MODEL_ID",
+          "relative_cost": 0.05,
+          "relative_latency": 0.5,
+          "max_risk": "low",
+          "task_classes": ["bulk-read", "bulk-classify", "data-xform", "creative"],
+          "reasoning_efforts": ["low"],
+          "capabilities": ["extract", "classify", "summarize"]
+        },
+        "balanced": {
+          "selector": "local-coder",
+          "resolved_model_env": "AGENT_FANOUT_LOCAL_MODEL_ID",
+          "relative_cost": 0.08,
+          "relative_latency": 0.75,
+          "max_risk": "medium",
+          "task_classes": ["bulk-read", "bulk-classify", "data-xform", "creative", "debug"],
+          "reasoning_efforts": ["medium"],
+          "capabilities": ["bounded_code_read", "debug_analysis", "test_suggestions"]
+        },
+        "frontier": {
+          "selector": "local-thinker",
+          "resolved_model_env": "AGENT_FANOUT_LOCAL_MODEL_ID",
+          "relative_cost": 0.12,
+          "relative_latency": 1.0,
+          "max_risk": "medium",
+          "task_classes": ["bulk-read", "bulk-classify", "data-xform", "creative", "debug", "plan", "reason"],
+          "reasoning_efforts": ["high"],
+          "requires_recent_eval": true,
+          "capabilities": ["bounded_reasoning", "review"]
+        }
+      }
+    },
+    "MiniMax": {
+      "enabled": false,
+      "retired": false,
+      "adapter": "adapters/MiniMax.md",
+      "availability_env": "AGENT_FANOUT_MINIMAX_AVAILABLE",
+      "profiles": {
+        "fast": {
+          "selector": "minimax-latest",
+          "resolved_model_env": "AGENT_FANOUT_MINIMAX_MODEL",
+          "relative_cost": 0.3,
+          "relative_latency": 0.5,
+          "max_risk": "medium",
+          "task_classes": ["small-edit", "bulk-read", "bulk-classify", "data-xform", "creative"],
+          "reasoning_efforts": ["low"],
+          "capabilities": ["read", "summarize", "classify", "bounded_tools"]
+        },
+        "balanced": {
+          "selector": "minimax-latest",
+          "resolved_model_env": "AGENT_FANOUT_MINIMAX_MODEL",
+          "relative_cost": 0.55,
+          "relative_latency": 0.7,
+          "max_risk": "high",
+          "task_classes": ["bulk-read", "bulk-classify", "data-xform", "creative", "debug", "test-gen", "refactor"],
+          "reasoning_efforts": ["medium"],
+          "capabilities": ["review", "debug", "bounded_edit"]
+        },
+        "frontier": {
+          "selector": "minimax-latest",
+          "resolved_model_env": "AGENT_FANOUT_MINIMAX_MODEL",
+          "relative_cost": 0.75,
+          "relative_latency": 0.9,
+          "max_risk": "high",
+          "task_classes": ["bulk-read", "bulk-classify", "data-xform", "creative", "debug", "test-gen", "refactor", "plan", "reason"],
+          "reasoning_efforts": ["high"],
+          "capabilities": ["architecture_review", "adversarial_validation"]
+        }
+      }
+    }
+  }
+}

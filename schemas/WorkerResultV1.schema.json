@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://synapsegrid-labs.example/schemas/agentfanout/WorkerResultV1.schema.json",
+  "title": "WorkerResultV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema", "result_id", "task_id", "status", "summary", "evidence",
+    "changed_files", "commands", "exit_codes", "remaining_work", "launch_correlation_id"
+  ],
+  "properties": {
+    "schema": {"const": "WorkerResultV1"},
+    "result_id": {"type": "string", "minLength": 1, "maxLength": 200},
+    "task_id": {"type": "string", "pattern": "^task_[a-f0-9]{32}$"},
+    "status": {"enum": ["success", "partial", "failed", "blocked"]},
+    "summary": {"type": "string", "minLength": 1, "maxLength": 8000},
+    "evidence": {"type": "array", "maxItems": 128, "items": {"type": ["string", "object"]}},
+    "changed_files": {"type": "array", "maxItems": 128, "items": {"type": "string", "maxLength": 1024}, "uniqueItems": true},
+    "commands": {"type": "array", "maxItems": 64, "items": {"type": "string", "maxLength": 2048}},
+    "exit_codes": {"type": "array", "maxItems": 64, "items": {"type": "integer"}},
+    "remaining_work": {
+      "type": "array",
+      "maxItems": 32,
+      "items": {
+        "oneOf": [
+          {"type": "string", "minLength": 1, "maxLength": 2000},
+          {
+            "type": "object", "additionalProperties": false,
+            "required": ["scope"],
+            "properties": {
+              "title": {"type": "string", "minLength": 1, "maxLength": 200},
+              "scope": {"type": "string", "minLength": 1, "maxLength": 2000},
+              "input_ref": {"type": "string", "minLength": 1, "maxLength": 1000}
+            }
+          }
+        ]
+      }
+    },
+    "launch_correlation_id": {"type": "string", "pattern": "^launch_[a-f0-9]{32}$"}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"status": {"const": "success"}}},
+      "then": {
+        "anyOf": [
+          {"properties": {"evidence": {"minItems": 1}}},
+          {"properties": {"changed_files": {"minItems": 1}}}
+        ]
+      }
+    }
+  ]
+}

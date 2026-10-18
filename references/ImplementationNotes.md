@@ -4,7 +4,12 @@
 
 Use one lazy `AgentFanout` skill as the execution policy for useful delegation and fanout.
 
-AgentFanout is a skill and policy layer with an advisory router. It is not a standalone worker dispatcher, and `scripts/route.py` does not launch workers, manage queues, enforce timeouts, or collect worker results.
+AgentFanout includes a skill/policy router, a persistent lifecycle controller,
+and a host-owned executable runner. Direct `scripts/route.py` and lifecycle
+result ingestion are compatibility surfaces: they do not launch provider
+processes or prove enforcement. The current hosted runner admits bounded Grok
+direct-HTTPS and attested Local execution. Native Codex remains unavailable
+because its diagnostic cannot prove the real provider no-tool boundary.
 
 AgentFanout combines:
 
@@ -16,6 +21,8 @@ AgentFanout is not injected into startup context. A host runtime should expose o
 
 Broad investigation is worker-first. When routing returns `dispatch.status=launch_required`, the host should launch workers before doing substantive main-session research, then wait for worker results before integrating. The main session should not duplicate worker research while they run. If no configured worker mechanism is available, the host should surface `fanout_blocked`; silent main-session fallback recreates the context-growth failure AgentFanout is meant to prevent.
 
+Host runtimes must route any user message containing `AgentFanout` before starting private knowledge-base, repository, filesystem, remote-host, or other substantive research. Inline directives such as `... AgentFanout MiniMax` are activation commands, not topic text. Provider commands are sticky for the current session until `AgentFanout Auto`, `AgentFanout Clear`, `AgentFanout Reset`, or session end.
+
 ## Token Policy
 
 - Keep `SKILL.md` lean and navigational.
@@ -25,14 +32,25 @@ Broad investigation is worker-first. When routing returns `dispatch.status=launc
 - Full agent/persona context loads only for named, custom, personality-heavy, or trait-heavy agents.
 - Full Codex-specific context loads only for deeper Codex persona/profile behavior.
 - Worker prompts must not include automatic memory, relationship history, full skill bodies, or voice metadata.
+- The parent ingests compact result packets, not full transcripts, and routes
+  again after every batch while delegable work remains.
 
-## Provider Fallback
+## Auto Provider Replanning
 
-Auto mode tries the cheapest capable provider chain for the task instead of stopping at the first unavailable provider. Low-risk bulk work prefers local, then MiniMax, then Codex. Coding/editing prefers Codex first. High-risk review/planning prefers Codex, then MiniMax, then Claude, with local only after stronger providers are unavailable.
+Before launch, Auto mode may replan among approved eligible profiles instead of
+stopping at the first unavailable candidate. Its ordering is provisional and
+registry-relative, not calibrated quality or measured savings. An explicit
+provider request does not enter this chain: readiness failure reports
+`fanout_blocked`, with no parent execution. Low-risk bulk work may prefer a
+verified Local profile; high-risk Local work requires explicit evaluation
+evidence. Claude is retired by default.
 
 Runtime readiness flags use the `AGENT_FANOUT_*` prefix. Legacy `AGENT_ORCH_*` flags are tolerated only for compatibility.
 
-Readiness flags and file checks are routing hints only. They do not perform live endpoint probing, API-key validation, provider health checks, or dependency verification.
+Router readiness flags and file checks are routing hints only. The atomic
+`doctor` and `run` paths add provider-specific executable, auth, helper,
+endpoint, capability, and dependency preflights where implemented; they are not
+general provider health or task-quality guarantees.
 
 ## Compatibility Decision
 
@@ -70,18 +88,29 @@ Premature GitHub publication is a high-severity release incident. Stop public wo
 - Skill registry root: `$PAI_DIR/skills` or `$PAI_HOME/skills`, falling back to `~/.pai/skills`.
 - MiniMax readiness: `AGENT_FANOUT_MINIMAX_AVAILABLE=1` or a MiniMax wrapper at `~/.pai/skills/MiniMax/Tools/MiniMaxExec.ts`.
 - Local readiness: `AGENT_FANOUT_LOCAL_AVAILABLE=1`.
-- Codex readiness: Codex runtime environment variables or `AGENT_FANOUT_CODEX_SUBAGENTS=1`.
-- Codex `current-fast-mini` is an explicit cheap-worker contract. Host runtimes must pass the mini/fast model override in `runtime_launch.codex_native` and must not let native subagents default to the main-session/frontier model.
+- Grok readiness: `AGENT_FANOUT_GROK_AVAILABLE=1` plus an atomic preflight of
+  the dedicated auth file, pinned discovery executable, exact model, and bundled
+  direct-HTTPS helper.
+- Codex router readiness: Codex runtime environment variables or
+  `AGENT_FANOUT_CODEX_SUBAGENTS=1`. Strict native worker admission still blocks
+  until a separately trusted real-provider no-tool proof exists.
+- Codex `current-fast-mini` is an advisory cheap-worker contract. A future
+  admitted host runtime must pass the mini/fast model override and must not let
+  native subagents default to the main-session/frontier model.
 - Claude readiness: `AGENT_FANOUT_CLAUDE_AVAILABLE=1`.
 
-## Future Harness Roadmap
+## Host Enforcement Layer
 
-A future optional dispatcher layer may add provider probes, key/endpoint checks, concurrency caps, timeouts, retries, cancellation, and normalized result capture. These capabilities are out of scope for the current skill/router implementation.
+`agentfanout.host_runtime` and `scripts/host-dispatch.py` add the portable host
+evidence and authorization layer. Provider-native process supervision remains
+adapter-owned, but an enforced run must record launches, measured usage,
+validator verdicts, effects, and Local sandbox evidence before terminal
+authorization. See `references/HostEnforcement.md`.
 
 ## Verification
 
 - `python3 tests/run_tests.py`
 - `python3 -m py_compile scripts/route.py tests/run_tests.py`
 - `scripts/github-preflight.sh`
-- `python3 scripts/route.py "review twenty independent modules"` should route to automatic guarded fanout when a provider is available.
-- `python3 scripts/route.py "AgentOrchestrator MiniMax review three modules"` should treat the legacy phrase as a one-turn provider hint and leave `next_state.provider_mode` as `Auto`.
+- `python3 scripts/route.py --project-root /exact/git/worktree "review twenty independent modules"` should produce root-bound advisory guidance when an eligible provider is configured.
+- `python3 scripts/route.py --project-root /exact/git/worktree "AgentOrchestrator MiniMax review three modules"` should treat the legacy phrase as a one-turn provider hint and leave `next_state.provider_mode` as `Auto`.

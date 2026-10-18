@@ -1,282 +1,163 @@
 # AgentFanout
 
-[![CI](https://github.com/SynapseGrid-Labs/AgentFanout/actions/workflows/ci.yml/badge.svg)](https://github.com/SynapseGrid-Labs/AgentFanout/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Release](https://img.shields.io/github/v/release/SynapseGrid-Labs/AgentFanout?include_prereleases)](https://github.com/SynapseGrid-Labs/AgentFanout/releases)
-[![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12-blue.svg)](.github/workflows/ci.yml)
-[![Security Policy](https://img.shields.io/badge/security-policy-green.svg)](SECURITY.md)
+**Keep your main chat lean. Use the right agent for the job.**
 
-AgentFanout is a provider-agnostic orchestration skill and advisory router for safe multi-agent work. It keeps the main session in charge of safety, private tools, git state, destructive actions, and final synthesis while allowing host runtimes to use bounded workers and validators when fanout is worth the overhead.
+Long AI conversations fill up with searches, notes, and intermediate work.
+When the app compresses that history, useful details can get lost. Meanwhile,
+simple tasks can consume the same expensive reasoning you need for harder decisions.
 
-Canonical project page: [synapsegridlabs.com/agentfanout](https://synapsegridlabs.com/agentfanout/)
+AgentFanout gives your main assistant the job of an orchestrator: break the work
+into focused tasks, delegate them to appropriate agents, and bring back concise
+findings. Keep the goal, important decisions, and final answer in your main chat.
+Let the working details stay in the agents' conversations.
 
-![AgentFanout orchestration architecture](assets/readme/agentfanout-orchestrator.jpg)
+![AgentFanout keeps your main chat focused on the goal and decisions while separate agents gather facts, organize information, compare options and check findings. Only concise results return. Model choice depends on the app.](assets/readme/agentfanout-overview.png)
 
-The diagrams show the intended orchestration flow. Worker launch is performed by the host runtime; AgentFanout provides routing policy, task packets, safety gates, and validation rules.
+## Why use it?
 
-## Current Status
+### Leave room for the conversation
 
-AgentFanout is `v0.1.1`. It is a portable skill/policy layer and deterministic advisory router, not a standalone dispatch harness. It is designed to be embedded into agent runtimes that already have a worker mechanism, such as Codex subagents, Claude agents, MiniMax wrappers, local LLM runners, or future provider adapters.
+A search can produce pages of material even when the useful answer is three
+sentences. AgentFanout asks workers to do that background work separately and
+return the findings, sources, and unresolved questions your main assistant needs.
+This limits what is brought back into the main chat and reduces context buildup.
 
-## Public Release Gate
+### Save stronger reasoning for harder work
 
-AgentFanout is public-facing. Maintainer-originated GitHub-facing changes are treated as release work, not scratch-pad updates. Maintainers must complete the local source review gate and full security audit described in [Release Process](docs/release-process.md) before creating or updating any GitHub-facing branch, pull request, tag, release, or public export.
+A straightforward lookup, extraction, or summary may need a different agent and
+model from a difficult judgment. AgentFanout's routing policy matches work to
+eligible capabilities instead of treating every task as equally demanding.
+Where your app supports and confirms model choice, lighter work can use a lighter
+model while harder work gets stronger reasoning.
 
-## Table of Contents
+### Get one coordinated answer
 
-- [Execution Model](#execution-model)
-- [Public Release Gate](#public-release-gate)
-- [Who This Is For](#who-this-is-for)
-- [What It Does](#what-it-does)
-- [What This Is Not](#what-this-is-not)
-- [Quickstart](#quickstart)
-- [Deterministic Router](#deterministic-router)
-- [Safety Model](#safety-model)
-- [Support and Contact](#support-and-contact)
-- [Release Process](docs/release-process.md)
-- [FAQ](#faq)
+You give the goal once. The main assistant assigns independent work, checks the
+returned findings, and follows up on gaps. You stay in one conversation instead
+of managing a separate chat for every part of the job.
 
-## What Is AgentFanout?
+## What that looks like
 
-AgentFanout is a safe multi-agent routing layer for host runtimes. It classifies work, applies hard safety gates, shapes compact worker packets, recommends provider routing, and requires validation when fanout is useful. AgentFanout does not launch workers by itself; the host runtime remains responsible for execution.
-
-## Execution Model
-
-- **Skill Mode:** The host agent uses AgentFanout instructions to decompose, delegate, validate, and integrate work.
-- **Worker-First Mode:** Broad investigations, repo searches, infrastructure research, and multi-surface debugging should launch scoped workers before the main session starts collecting evidence.
-- **Router Mode:** `scripts/route.py` returns advisory JSON, dispatch requirements, and sanitization output. It does not launch workers by itself.
-- **Harness Mode:** A standalone dispatcher is possible future infrastructure. It is not currently shipped.
-
-If `scripts/route.py` reports `dispatch.status=launch_required`, the host runtime should launch workers using its native mechanism before substantive main-session research. While workers run, the main session should coordinate, wait, validate, and integrate rather than duplicate the workers' SSH diagnostics, filesystem sweeps, repo-wide search, or substantive research. If no worker mechanism is available, hosts should surface `fanout_blocked` rather than silently falling back to main-session-only work.
-
-## Who This Is For
-
-AgentFanout is for people building or operating agent workflows that need:
-
-- bounded fanout across coding, review, research, validation, or extraction tasks
-- strict separation between the main session and worker prompts
-- provider-agnostic routing across current and future agent runtimes
-- small worker packets that reduce main-session context growth
-- explicit safety gates for secrets, private tools, git state, destructive actions, and final synthesis
-
-## What It Does
-
-- Routes work between the main session, Codex, Claude, MiniMax, local LLMs, or future providers.
-- Uses automatic guarded fanout instead of a fixed worker-count command.
-- Gives each worker a compact specialist capsule by default.
-- Loads richer agent/persona context only when the request actually needs it.
-- Sanitizes delegated prompts so voice, callback, webhook, and notification behavior cannot leak into workers.
-- Treats legacy `AgentOrchestrator` and `OrchestratorMode` phrases as compatibility hints, not global policy.
-
-## What This Is Not
-
-AgentFanout does not currently provide:
-
-- a standalone worker dispatcher
-- subprocess orchestration
-- concurrency caps
-- endpoint probing or API-key validation
-- worker timeout/cancellation management
-- result collection from external runtimes
-
-Those capabilities belong in a future optional harness or in the host runtime.
-
-## Why It Helps
-
-![AgentFanout before and after context comparison](assets/readme/agentfanout-before-after.jpg)
-
-AgentFanout keeps the main session's context focused by shaping small, bounded worker packets. When the host runtime supports worker execution, it sends those packets to workers; the main session receives evidence and validated results back, then performs the final integration.
-
-## Quickstart
-
-Copy this repository into your runtime skill root:
-
-```bash
-mkdir -p "${PAI_DIR:-$HOME/.pai}/skills"
-cp -R AgentFanout "${PAI_DIR:-$HOME/.pai}/skills/AgentFanout"
+```text
+AgentFanout compare these three workshop plans against my requirements.
+Have agents check the schedule, compare the resources needed, and flag gaps.
+Bring back a concise comparison with sources and unresolved questions.
 ```
 
-If your runtime supports a skill registry, regenerate it after copying the skill.
+The same pattern can help with document summaries, option comparisons, planning,
+organizing information, or a second check of a draft. Choose independent tasks
+that can return useful findings. Simple questions stay in the main conversation.
 
-Run the advisory router directly:
+![A main conversation containing searches, notes and drafts becomes an orchestrated task: focused agents gather and compare information, send concise findings back, and leave the main chat focused on decisions. This is a conceptual illustration, not a token benchmark.](assets/readme/agentfanout-waves.png)
 
-```bash
-python3 scripts/route.py "review twenty independent modules"
-python3 scripts/route.py "AgentFanout Status"
-python3 scripts/route.py --sanitize "prompt text"
+1. **Set the goal.** Tell your main assistant what you need and what matters.
+2. **Delegate focused work.** Agents get bounded assignments and work in parallel
+   when the parts are independent.
+3. **Bring back what matters.** The assistant reviews findings, asks for follow-up
+   when needed, and gives you a combined answer or explains what remains blocked.
+
+## Tokens, usage, and context compression
+
+AgentFanout addresses two different sources of waste: putting every working detail
+into your main chat, and using more model capability than a task requires.
+
+Keeping worker conversations separate and asking for short results helps leave
+room in the main chat. Your app still controls its context window and compression;
+AgentFanout does not expand that window or guarantee compression never happens.
+
+Delegated agents also use tokens. Total usage depends on task size, model choice,
+repeated instructions, retries, and checks. Matching a task to a suitable lower-cost
+model can reduce that task's model cost where supported. **Net token or money
+savings have not been established by a controlled AgentFanout benchmark.**
+
+The default skill guides orchestration. It can request model or reasoning choices
+only when the app exposes them; it cannot manufacture those controls. See
+[model selection and accounting](references/CostPolicy.md) for the detailed policy.
+
+## Get started
+
+Use AgentFanout inside an AI app that supports skill discovery and native agents.
+The default is a small Markdown skill; Python and a separate runtime are optional.
+
+### 1. Install the lightweight skill
+
+From a reviewed checkout, copy these six files into your app's skill directory
+under `agent-fanout/`, keeping their relative paths:
+
+```text
+agent-fanout/
+├── SKILL.md
+├── agents/openai.yaml
+├── workflows/Activate.md
+├── workflows/Wave.md
+├── references/ParentBoundary.md
+└── references/WhenNotToFanout.md
 ```
 
-## Deterministic Router
+This profile needs no Python, Bun, provider credential, or Linux-specific component.
+It adds no AgentFanout-specific global startup instructions. The app supplies the
+agents, their permissions, and any model-selection controls.
 
-`scripts/route.py` classifies a request, checks hard gates, selects a provider preference, estimates useful fanout, returns a worker capsule, reports dispatch requirements, and reports validator requirements.
+### 2. Ask for a task
 
-Example output shape:
+Start with non-sensitive sample material and an independent multi-part request,
+such as the workshop-plan example above. Use `AgentFanout Status`,
+`AgentFanout Help`, or `AgentFanout Cancel` for the active task. Cancellation stops
+new assignments and requests cancellation of active agents where the app supports it;
+it does not prove that remote work has stopped.
 
-```json
-{
-  "route": {
-    "task_class": "bulk-read",
-    "worth_delegating": true,
-    "parallelism": "parallel",
-    "executor": {
-      "role": "explorer",
-      "provider": "MiniMax",
-      "model_selector": "minimax-latest",
-      "reasoning_effort": "low"
-    }
-  },
-  "fanout": {
-    "policy": "automatic_guarded",
-    "planned_workers": 20
-  },
-  "dispatch": {
-    "status": "launch_required",
-    "main_session_policy": "coordinate_wait_integrate",
-    "launch_before_main_research": true,
-    "main_session_may_duplicate_worker_research": false,
-    "fallback_allowed": false
-  },
-  "validator": {
-    "required": true
-  }
-}
-```
+`AgentFanout Codex|Grok|Local <task>` requests a provider preference for one task.
+It depends on available, verified host capabilities and does not authorize spending
+or change how later unrelated conversations run.
 
-Provider readiness is environment-driven:
+## Optional integrations
 
-```bash
-AGENT_FANOUT_MINIMAX_AVAILABLE=1
-AGENT_FANOUT_LOCAL_AVAILABLE=1
-AGENT_FANOUT_CODEX_SUBAGENTS=1
-AGENT_FANOUT_CLAUDE_AVAILABLE=1
-```
+- **Native skill — default.** Small, portable instructions for delegation and
+  concise results. The app supplies agents and enforcement.
+- **Codex plugin — optional.** Adds tracking and guards for supported hook events.
+  Requires Python 3.9+, Codex plugin discovery, hooks, and native multi-agent
+  support. Hook coverage is incomplete; compatibility must be checked on your host.
+- **Strict runtime — optional.** Adds controlled hosted execution, validated
+  receipts, accounting, and recovery. Requires Linux/POSIX, Python 3.11+, an
+  isolated environment, locked dependencies, exact project binding, and verified
+  provider evidence. It governs the work it launches.
 
-The router also checks `$PAI_DIR/skills/MiniMax/Tools/MiniMaxExec.ts` or `$PAI_HOME/skills/MiniMax/Tools/MiniMaxExec.ts` for MiniMax readiness, falling back to `~/.pai/skills/...`.
+Grok native integration is experimental. GrokCLI subscription, coordinator-backed
+Local, and mixed hosted runs are disabled candidates. All six upgrade controls
+remain off; retained sessions and tool-capable upgrade workers are deferred.
+The deployment-specific coordinator is external to this repository. Hosted and
+native/V2 contracts remain separate.
 
-Readiness flags and file checks are routing hints. They do not perform live endpoint probing, key validation, or health checks.
+See the [profile guide](docs/profile-guide.md) for installation and compatibility,
+and [feature status](docs/candidate-status.md) for implemented, experimental,
+and unavailable behavior.
 
-MiniMax highspeed is not assumed. AgentFanout uses the default supported MiniMax selector unless the host runtime has verified that the active token plan supports highspeed mode.
+## Safety and limitations
 
-## Safety Model
+Keep private account tools, credentials, Git changes, destructive actions, and
+final decisions with the main assistant and host. Worker text cannot grant
+launch, model, usage, or spending authority. The native skill supplies guidance;
+stronger enforcement requires independently verified host controls.
 
-The main session always owns:
+Agents can make mistakes. Concise findings still need evidence and review.
+A completed task batch, plugin completion marker, or `Stop` hook does not prove
+that the overall job is correct or finished. Checks are conditional on risk and
+uncertainty; small, low-risk tasks do not automatically need another agent.
 
-- MCP/private-account tools
-- secrets and credentials
-- git state changes
-- destructive or irreversible actions
-- final synthesis and user-facing conclusions
+Bounded prompts and known-pattern screening are not data-loss prevention. An empty
+MCP list, read-only instruction, or sandbox label does not prove tool isolation.
+No-tool helpers are not a complete OS sandbox against malicious same-user processes.
 
-Suspicious credential-shaped prompts remain main-session-only even when they do not use words like "secret" or "token".
+The strict runtime blocks when required checks fail, limits are exhausted, usage
+is missing, or effects remain uncertain. It does not silently switch providers.
+Unknown effects retain reservations and block replay or terminal success. Recovery
+preserves compatible runtimes and immutable history. Authentication establishes
+neither included allowance nor permission to spend; provider costs may be unknown.
 
-Workers receive only bounded task packets. They must return results to the main session and must not contact notification hooks, voice systems, webhooks, or callback URLs.
+Read [Security](SECURITY.md), [host controls](references/HostEnforcement.md),
+and [recovery and cancellation](docs/profile-guide.md#validation-failure-and-recovery)
+before adopting stronger integrations. Offline tests do not establish current live
+model support or production readiness.
 
-Read-only research workers may use scoped read-only retrieval and diagnostics when assigned by the host: repo/file reads, filesystem search, runtime-approved knowledge-base retrieval, public web or docs research, read-only SSH diagnostics, and read-only database queries where configured. That read-only scope does not include private-account side effects, secrets, git mutations, destructive actions, or final synthesis.
-
-## Support and Contact
-
-- Project page: [synapsegridlabs.com/agentfanout](https://synapsegridlabs.com/agentfanout/)
-- Contact page: [synapsegridlabs.com/contact](https://synapsegridlabs.com/contact/)
-- Usage questions, documentation gaps, routing bugs, and adapter suggestions: [GitHub Issues](https://github.com/SynapseGrid-Labs/AgentFanout/issues)
-- Support policy: [SUPPORT.md](SUPPORT.md)
-- Security reporting: [SECURITY.md](SECURITY.md)
-
-Do not post secrets, credentials, private infrastructure details, or harmful exploit payloads in public issues.
-
-## Commands
-
-Only exact full-line `AgentFanout ...` commands mutate session state:
-
-- `AgentFanout Status`
-- `AgentFanout Help`
-- `AgentFanout MiniMax`
-- `AgentFanout Local`
-- `AgentFanout Codex`
-- `AgentFanout Claude`
-- `AgentFanout HIGH`
-- `AgentFanout Auto`
-- `AgentFanout Clear`
-- `AgentFanout Reset`
-
-Fanout size is automatic. AgentFanout estimates independent work units, provider readiness, validation overhead, write-scope conflicts, and hard gates.
-
-## Tests
-
-```bash
-python3 tests/run_tests.py
-python3 -m py_compile scripts/route.py tests/run_tests.py
-scripts/github-preflight.sh
-```
-
-## Repository Layout
-
-- `SKILL.md`: primary skill instructions
-- `scripts/route.py`: deterministic advisory router and sanitizer
-- `references/`: routing, safety, provider, validator, and token policy references
-- `adapters/`: provider-specific adapter contracts
-- `workflows/`: activation, routing, and validation workflows
-- `tests/`: fixture-based router tests
-
-## FAQ
-
-<details>
-<summary>Is AgentFanout a standalone orchestrator?</summary>
-
-No. AgentFanout is a portable skill and policy layer. It provides advisory routing via `scripts/route.py` and integration instructions for host runtimes, but it does not launch workers or manage dispatch queues.
-
-</details>
-
-<details>
-<summary>Is this just regex routing?</summary>
-
-No. `scripts/route.py` uses deterministic cues and regexes as one input, then applies task classification, hard safety gates, provider selection, worker capsule shaping, and validation policy. It returns an advisory route; the host runtime executes it.
-
-</details>
-
-<details>
-<summary>Who actually launches the workers?</summary>
-
-The host runtime launches workers using its native mechanism, such as Codex subagents, Claude agents, a MiniMax wrapper, a local LLM runner, or a future optional harness.
-
-</details>
-
-<details>
-<summary>What happens if AgentFanout wants workers but none are available?</summary>
-
-The route should surface `fanout_blocked`. The host should report that worker launch is unavailable instead of letting the main session quietly perform the whole broad investigation.
-
-</details>
-
-<details>
-<summary>What does <code>route.py</code> actually do?</summary>
-
-`scripts/route.py` returns advisory JSON for routing, mode state, worker capsules, validator requirements, warnings, and prompt sanitization. It does not dispatch workers, enforce concurrency, apply timeouts, or collect worker results.
-
-</details>
-
-<details>
-<summary>Why not ship a full harness now?</summary>
-
-AgentFanout is designed to be host-runtime agnostic. Shipping a dispatcher would add implementation assumptions that reduce portability. A harness can be added later as an optional layer.
-
-</details>
-
-<details>
-<summary>What remains main-session only?</summary>
-
-MCP/private tools, secrets, git state changes, destructive actions, authenticated calls, and final synthesis remain in the main session.
-
-</details>
-
-<details>
-<summary>Will there be a future harness?</summary>
-
-Possibly. A future optional harness could add provider probes, key and endpoint checks, concurrency caps, timeouts, retries, cancellation, and normalized result capture.
-
-</details>
-
-## Maintainer
-
-[![Maintained by Trent Doney at SynapseGrid Labs](assets/readme/github-maintained-by-trent.jpg)](https://github.com/trentdoney)
-
-See [CONTRIBUTORS.md](CONTRIBUTORS.md) for contributor attribution.
+[Support](SUPPORT.md) · [Contributing](CONTRIBUTING.md) · [Release process](docs/release-process.md) ·
+[MIT license](LICENSE) · [Image provenance](assets/README.md)

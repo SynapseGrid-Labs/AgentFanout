@@ -1,0 +1,415 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "MixedRunContractV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "run_id",
+    "runtime",
+    "assignments",
+    "allowed_transitions",
+    "feature_controls",
+    "contract_sha256"
+  ],
+  "properties": {
+    "schema": {
+      "const": "MixedRunContractV1"
+    },
+    "run_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9_.:-]{0,127}$"
+    },
+    "runtime": {
+      "$ref": "#/$defs/runtime"
+    },
+    "assignments": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 1024,
+      "items": {
+        "$ref": "#/$defs/assignment"
+      }
+    },
+    "allowed_transitions": {
+      "type": "array",
+      "maxItems": 4096,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/transition"
+      }
+    },
+    "feature_controls": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "grok_cli_subscription",
+        "coordinator_local",
+        "mixed_provider_runs"
+      ],
+      "properties": {
+        "grok_cli_subscription": {
+          "type": "boolean"
+        },
+        "coordinator_local": {
+          "type": "boolean"
+        },
+        "mixed_provider_runs": {
+          "type": "boolean"
+        }
+      }
+    },
+    "contract_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  },
+  "$defs": {
+    "runtime": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_commit",
+        "release_id",
+        "manifest_sha256",
+        "entrypoint_sha256",
+        "contracts_sha256"
+      ],
+      "properties": {
+        "source_commit": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40,64}$"
+        },
+        "release_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "manifest_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "entrypoint_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "contracts_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      }
+    },
+    "resource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reservation_id",
+        "domain",
+        "lease_id",
+        "serving_epoch",
+        "fencing_token",
+        "readiness",
+        "ownership",
+        "cancellation",
+        "expires_at",
+        "purpose"
+      ],
+      "properties": {
+        "reservation_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[^\\x00-\\x1f\\x7f]+$"
+        },
+        "domain": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[^\\x00-\\x1f\\x7f]+$"
+        },
+        "lease_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[^\\x00-\\x1f\\x7f]+$"
+        },
+        "serving_epoch": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[^\\x00-\\x1f\\x7f]+$"
+        },
+        "fencing_token": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[^\\x00-\\x1f\\x7f]+$"
+        },
+        "readiness": {
+          "enum": [
+            "ready",
+            "waiting",
+            "unavailable",
+            "uncertain"
+          ]
+        },
+        "ownership": {
+          "enum": [
+            "certain",
+            "uncertain"
+          ]
+        },
+        "cancellation": {
+          "enum": [
+            "none",
+            "confirmed",
+            "uncertain"
+          ]
+        },
+        "expires_at": {
+          "type": "number"
+        },
+        "purpose": {
+          "enum": [
+            "worker",
+            "validator"
+          ]
+        }
+      }
+    },
+    "binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "provider",
+        "mode",
+        "model_selector",
+        "resolved_model",
+        "reasoning_effort",
+        "identity_sha256",
+        "resource",
+        "reservation_cost_usd",
+        "destination_id"
+      ],
+      "properties": {
+        "provider": {
+          "enum": [
+            "GrokCLI",
+            "Local",
+            "Grok",
+            "Codex"
+          ]
+        },
+        "mode": {
+          "enum": [
+            "grok_cli_subscription_acp",
+            "coordinator_local",
+            "grok_direct_https",
+            "codex_cli_no_tool"
+          ]
+        },
+        "model_selector": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[^\\x00-\\x1f\\x7f]+$"
+        },
+        "resolved_model": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[^\\x00-\\x1f\\x7f]+$"
+        },
+        "reasoning_effort": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[^\\x00-\\x1f\\x7f]+$"
+        },
+        "identity_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "resource": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/resource"
+            }
+          ]
+        },
+        "reservation_cost_usd": {
+          "type": "number",
+          "minimum": 0
+        },
+        "destination_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9_.:-]{0,127}$"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "provider": {
+                "const": "GrokCLI"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "mode": {
+                "const": "grok_cli_subscription_acp"
+              },
+              "resource": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "provider": {
+                "const": "Local"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "mode": {
+                "const": "coordinator_local"
+              },
+              "resource": {
+                "$ref": "#/$defs/resource"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "provider": {
+                "const": "Grok"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "mode": {
+                "const": "grok_direct_https"
+              },
+              "resource": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "provider": {
+                "const": "Codex"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "mode": {
+                "const": "codex_cli_no_tool"
+              },
+              "resource": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "assignment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "assignment_id",
+        "worker",
+        "validator",
+        "validation_required",
+        "egress_policy"
+      ],
+      "properties": {
+        "assignment_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9_.:-]{0,127}$"
+        },
+        "worker": {
+          "$ref": "#/$defs/binding"
+        },
+        "validator": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/binding"
+            }
+          ]
+        },
+        "validation_required": {
+          "type": "boolean"
+        },
+        "egress_policy": {
+          "$ref": "EvidenceEgressPolicyV1.schema.json"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "validation_required": {
+                "const": true
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "validator": {
+                "$ref": "#/$defs/binding"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "transition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "assignment_id",
+        "role",
+        "from_binding_sha256",
+        "to_binding"
+      ],
+      "properties": {
+        "assignment_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9_.:-]{0,127}$"
+        },
+        "role": {
+          "enum": [
+            "worker",
+            "validator"
+          ]
+        },
+        "from_binding_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "to_binding": {
+          "$ref": "#/$defs/binding"
+        }
+      }
+    }
+  }
+}

@@ -19,13 +19,42 @@ jobs:
           - "3.11"
           - "3.12"
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Run tests
+      - name: Install declared runtime dependencies
+        run: >-
+          python3 -m pip install --disable-pip-version-check --require-hashes
+          --only-binary=:all: --index-url https://pypi.org/simple
+          -r requirements.lock
+      - name: Verify dependency environment
+        run: python3 -m pip check
+      - name: Run router core tests
         run: python3 tests/run_tests.py
-      - name: Compile Python
-        run: python3 -m py_compile scripts/route.py tests/run_tests.py
+      - name: Compile every Python release module
+        run: python3 -m py_compile agentfanout/*.py scripts/*.py tests/*.py
+      - name: Run complete Python unit suite
+        run: python3 -W error::ResourceWarning -m unittest discover -s tests -p 'test_*.py'
+      - name: Verify skill-first product tests with a clean home
+        run: HOME="$(mktemp -d)" python3 -W error::ResourceWarning -m unittest tests/test_skill_first_product.py tests/test_skill_first_uat.py
+      - name: Run runtime parity tests
+        run: python3 -m unittest tests/test_runtime_parity.py
+      - name: Run atomic release pipeline tests
+        run: python3 -m unittest tests/test_release_pipeline.py
+      - name: Run VLLMWorker broker smoke test
+        run: python3 -m unittest tests/test_vllmworker_broker_smoke.py
       - name: GitHub preflight
         run: scripts/github-preflight.sh
+      - name: Public distribution tests
+        run: python3 -m unittest tests/test_public_distribution.py
+
+  cleanroom-install:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.12"
+      - name: Verify isolated public install and safe deactivation
+        run: python3 scripts/cleanroom-test.py --pretty

@@ -1,0 +1,129 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "title": "LocalInferenceProfileV1",
+  "required": [
+    "schema",
+    "profile_id",
+    "identity_sha256",
+    "attestation_sha256",
+    "thinking_control",
+    "sampling",
+    "constrained_output",
+    "reasoning_field",
+    "max_output_tokens"
+  ],
+  "properties": {
+    "schema": {
+      "const": "LocalInferenceProfileV1"
+    },
+    "profile_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$"
+    },
+    "identity_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "attestation_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "thinking_control": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "mechanism",
+            "value"
+          ],
+          "properties": {
+            "mechanism": {
+              "const": "chat_template_kwargs.enable_thinking"
+            },
+            "value": {
+              "type": "boolean"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "mechanism",
+            "value"
+          ],
+          "properties": {
+            "mechanism": {
+              "const": "reasoning_effort"
+            },
+            "value": {
+              "enum": [
+                "low",
+                "medium",
+                "high"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "mechanism",
+            "value"
+          ],
+          "properties": {
+            "mechanism": {
+              "const": "unsupported"
+            },
+            "value": {
+              "type": "null"
+            }
+          }
+        }
+      ]
+    },
+    "sampling": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "temperature": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 2
+        },
+        "top_p": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "top_k": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000
+        }
+      }
+    },
+    "constrained_output": {
+      "enum": [
+        "unsupported",
+        "json_schema"
+      ]
+    },
+    "reasoning_field": {
+      "enum": [
+        "unsupported",
+        "reasoning",
+        "reasoning_content"
+      ]
+    },
+    "max_output_tokens": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 32768
+    }
+  }
+}

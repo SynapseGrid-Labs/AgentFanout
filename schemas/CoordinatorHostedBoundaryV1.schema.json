@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CoordinatorHostedBoundaryV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "run_id",
+    "task_id",
+    "role",
+    "request_id",
+    "reservation",
+    "observation",
+    "profile",
+    "payload_sha256",
+    "adapter_identity_sha256",
+    "input_mode",
+    "tool_mode"
+  ],
+  "properties": {
+    "schema": {
+      "const": "CoordinatorHostedBoundaryV1"
+    },
+    "run_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "task_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "role": {
+      "enum": [
+        "worker",
+        "validator"
+      ]
+    },
+    "request_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "reservation": {
+      "type": "object"
+    },
+    "observation": {
+      "type": "object"
+    },
+    "profile": {
+      "$ref": "LocalInferenceProfileV1.schema.json"
+    },
+    "payload_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "adapter_identity_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "input_mode": {
+      "const": "bounded_file_text"
+    },
+    "tool_mode": {
+      "const": "no_tools"
+    }
+  }
+}

@@ -2,6 +2,10 @@
 
 Validators run after a worker returns output. A validator must inspect a bounded target, not redo the whole task.
 
+After validation, return the compact packet to the lifecycle controller.
+Residual or repair work becomes a new `TaskUnitV1`; it is not silently absorbed
+by the parent session.
+
 In provider-primary mode, validation stays provider-side first. The main session
 does a compact final review and escalates only when structural or provider-side
 validation cannot support the result.

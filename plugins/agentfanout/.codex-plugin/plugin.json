@@ -1,0 +1,34 @@
+{
+  "name": "agentfanout",
+  "version": "0.4.0-rc.1",
+  "description": "Task-scoped parallel-agent orchestration with mandatory post-batch replanning for Codex.",
+  "author": {
+    "name": "SynapseGrid Labs",
+    "url": "https://github.com/SynapseGrid-Labs"
+  },
+  "homepage": "https://github.com/SynapseGrid-Labs/AgentFanout",
+  "repository": "https://github.com/SynapseGrid-Labs/AgentFanout",
+  "license": "MIT",
+  "keywords": [
+    "agents",
+    "orchestration",
+    "fanout",
+    "codex"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "AgentFanout",
+    "shortDescription": "Persistent parallel worker waves",
+    "longDescription": "Keeps Codex in a task-scoped orchestrator role and requires a fresh residual-work decision after every worker batch.",
+    "developerName": "SynapseGrid Labs",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Interactive",
+      "Write"
+    ],
+    "websiteURL": "https://github.com/SynapseGrid-Labs/AgentFanout",
+    "defaultPrompt": [
+      "Use AgentFanout Codex to complete this task with parallel worker waves."
+    ]
+  }
+}

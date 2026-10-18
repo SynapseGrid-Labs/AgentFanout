@@ -40,11 +40,32 @@ Delegate when at least one condition is true and no hard gate blocks it:
 - there are multiple review dimensions
 - the task benefits from independent validation
 - the task is high-risk and a second-pass critique materially reduces risk
-- the task is large enough that parallelism or cheaper workers save time/cost
+- the task is large enough that parallelism or lower registry-relative workers
+  are plausibly worth their measured overhead
+
+For Auto mode, the router applies a host-deterministic anti-waste gate after
+candidate selection. If the predicted worker-plus-validator wave costs more than
+the direct main-session baseline, it stays main-session-only. Explicit
+AgentFanout/parallel-worker requests, an explicit provider mode or force
+dispatch, and an explicitly required independent-validation policy override this
+gate. The route output records `anti_waste_guard`; it is a cost decision, never
+a silent provider failure or a parent fallback after a worker launch.
 
 Do not delegate when orchestration overhead dominates.
 
 Broad investigation is worker-first. Prompts such as "fully investigate", "find whether X exists", "trace how X talks to Y", or multi-surface host/repo/service research should produce research workers before the main session starts gathering evidence. After launch, the main session coordinates, waits, validates, and integrates; it must not duplicate the workers' SSH diagnostics, filesystem sweeps, repo-wide search, or substantive research. If no provider can launch workers, the route must expose `fanout_blocked` instead of silently converting the job into main-session research.
+
+## Blocked-route rule
+
+`fanout_blocked` is terminal for that delegated work unit. The parent must not
+offer, request approval for, or execute the blocked worker work itself. It may
+replan only to a worker provider already approved by the run's frozen provider
+policy and capable of the same bounded packet. If no such worker exists, stop
+and report the block reason.
+
+For `AgentFanout Status` and `AgentFanout Help`, do not load this full routing
+reference: use the compact command response. For a Local-blocked route, load
+only `references/LocalFirst.md` when a concise gate explanation is necessary.
 
 Research workers may receive scoped read-only tool access when assigned by the host runtime: repo/file reads, filesystem search, runtime-approved knowledge-base reads, public web/docs research, read-only SSH diagnostics, and read-only database queries where configured. These are not permission to perform private-account side effects, handle secrets, change git state, run destructive operations, or write final synthesis.
 

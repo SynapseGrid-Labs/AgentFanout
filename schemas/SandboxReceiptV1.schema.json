@@ -1,0 +1,114 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SandboxReceiptV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "algorithm", "signed", "signature"],
+  "$defs": {
+    "daemonIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["engine", "endpoint", "server_id", "server_version", "rootless"],
+      "properties": {
+        "engine": {"const": "docker"},
+        "endpoint": {"type": "string", "pattern": "^unix:///.+"},
+        "server_id": {"type": "string", "minLength": 1},
+        "server_version": {"type": "string", "minLength": 1},
+        "rootless": {"type": "boolean"}
+      }
+    },
+    "mount": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source", "destination", "read_only"],
+      "properties": {
+        "source": {"type": "string", "pattern": "^/"},
+        "destination": {"type": "string", "pattern": "^/"},
+        "read_only": {"type": "boolean"}
+      }
+    },
+    "tmpfs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["destination", "options"],
+      "properties": {
+        "destination": {"const": "/tmp"},
+        "options": {
+          "type": "array",
+          "prefixItems": [
+            {"const": "nodev"}, {"const": "noexec"}, {"const": "nosuid"},
+            {"const": "rw"}, {"const": "size=64m"}
+          ],
+          "items": false,
+          "minItems": 5,
+          "maxItems": 5
+        }
+      }
+    },
+    "limits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["memory", "cpus", "pids_limit"],
+      "properties": {
+        "memory": {"type": "string", "minLength": 1},
+        "cpus": {"type": "string", "minLength": 1},
+        "pids_limit": {"type": "integer", "minimum": 1, "maximum": 4096}
+      }
+    },
+    "boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "image_digest", "read_only", "network_mode", "mounts", "cap_drop",
+        "no_new_privileges", "privileged", "devices", "limits", "user", "tmpfs", "daemon_identity"
+      ],
+      "properties": {
+        "image_digest": {"type": "string", "pattern": "@sha256:[0-9a-f]{64}$"},
+        "read_only": {"const": true},
+        "network_mode": {"const": "none"},
+        "mounts": {"type": "array", "items": {"$ref": "#/$defs/mount"}},
+        "cap_drop": {"type": "array", "prefixItems": [{"const": "ALL"}], "items": false, "minItems": 1, "maxItems": 1},
+        "no_new_privileges": {"const": true},
+        "privileged": {"const": false},
+        "devices": {"type": "array", "maxItems": 0},
+        "limits": {"$ref": "#/$defs/limits"},
+        "user": {"type": "string", "pattern": "^[1-9][0-9]*:[1-9][0-9]*$"},
+        "tmpfs": {"$ref": "#/$defs/tmpfs"},
+        "daemon_identity": {"$ref": "#/$defs/daemonIdentity"}
+      }
+    }
+  },
+  "properties": {
+    "schema": {"const": "SandboxReceiptV1"},
+    "algorithm": {"const": "Ed25519"},
+    "signed": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "run_id", "task_id", "launch_correlation_id", "container_id", "nonce",
+        "boundary_status", "observation_source", "tool_policy", "tool_policy_sha256",
+        "declared_policy", "declared_policy_sha256", "observed_policy",
+        "observation_sha256", "image_digest", "verified_at", "expires_at"
+      ],
+      "properties": {
+        "run_id": {"type": "string", "minLength": 1},
+        "task_id": {"type": "string", "minLength": 1},
+        "launch_correlation_id": {"type": "string", "minLength": 1},
+        "container_id": {"type": "string", "minLength": 8},
+        "nonce": {"type": "string", "minLength": 16},
+        "boundary_status": {"enum": ["experimental_observation_only", "host_enforced"]},
+        "observation_source": {"const": "host_docker_inspect"},
+        "tool_policy": {"type": "object"},
+        "tool_policy_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "declared_policy": {"$ref": "#/$defs/boundary"},
+        "declared_policy_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "observed_policy": {"$ref": "#/$defs/boundary"},
+        "observation_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "image_digest": {"type": "string", "pattern": "@sha256:[0-9a-f]{64}$"},
+        "verified_at": {"type": "string", "format": "date-time"},
+        "expires_at": {"type": "string", "format": "date-time"}
+      }
+    },
+    "signature": {"type": "string", "minLength": 1}
+  }
+}

@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SessionGuardStateV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "guard_id", "run_id", "status", "project_binding_sha256", "host_manifest_sha256", "run_state_path", "run_state_path_sha256", "ledger_path", "ledger_path_sha256", "provider", "model_selector", "resolved_model", "provider_executable_sha256", "provider_executable_identity", "provider_boundary_sha256", "provider_runtime_config", "max_workers", "enforcement_level", "native_worker_tool_control", "armed_at", "guard_binding_sha256", "fallback_allowed"],
+  "properties": {
+    "schema": {"const": "SessionGuardStateV1"},
+    "guard_id": {"type": "string", "pattern": "^guard_[a-f0-9]{32}$"},
+    "run_id": {"type": "string", "pattern": "^run_[a-f0-9]{32}$"},
+    "status": {"enum": ["armed", "blocked", "released", "abandoned"]},
+    "project_binding_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "host_manifest_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "run_state_path": {"type": "string", "minLength": 1},
+    "run_state_path_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "ledger_path": {"type": "string", "minLength": 1},
+    "ledger_path_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "provider": {"type": "string", "minLength": 1},
+    "model_selector": {"type": "string", "minLength": 1},
+    "resolved_model": {"type": "string", "minLength": 1},
+    "provider_executable_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "provider_boundary_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "provider_executable_identity": {
+      "type": "object",
+      "required": ["executable_realpath", "executable_sha256", "executable_bytes", "executable_device", "executable_inode", "launch_argv_sha256", "argument_file_identities", "launcher_chain_identities", "codex_native_executable_identity", "codex_wrapper_argv_index"],
+      "properties": {
+        "executable_realpath": {"type": "string", "minLength": 1},
+        "executable_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "executable_bytes": {"type": "integer", "minimum": 0},
+        "executable_device": {"type": "integer", "minimum": 0},
+        "executable_inode": {"type": "integer", "minimum": 0},
+        "launch_argv_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "argument_file_identities": {"type": "array", "items": {"type": "object"}},
+        "launcher_chain_identities": {"type": "array", "items": {"type": "object"}},
+        "codex_native_executable_identity": {"type": ["object", "null"]},
+        "codex_wrapper_argv_index": {"type": ["integer", "null"], "minimum": 0}
+      },
+      "additionalProperties": false
+    },
+    "provider_runtime_config": {
+      "type": "object",
+      "properties": {
+        "grok_home_path_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "grok_home_device": {"type": "integer", "minimum": 0},
+        "grok_home_inode": {"type": "integer", "minimum": 0},
+        "grok_model_override": {"type": ["string", "null"], "minLength": 1},
+        "grok_auth_file_identity": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["schema", "auth_file_path_sha256", "auth_file_sha256", "auth_file_bytes", "auth_file_device", "auth_file_inode", "auth_file_mode", "auth_file_uid"],
+          "properties": {
+            "schema": {"const": "GrokAuthFileIdentityV1"},
+            "auth_file_path_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+            "auth_file_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+            "auth_file_bytes": {"type": "integer", "minimum": 1},
+            "auth_file_device": {"type": "integer", "minimum": 0},
+            "auth_file_inode": {"type": "integer", "minimum": 0},
+            "auth_file_mode": {"type": "integer", "minimum": 0},
+            "auth_file_uid": {"type": "integer", "minimum": 0}
+          }
+        },
+        "grok_http_helper_identity": {"type": "object"},
+        "endpoint_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "endpoint_policy": {"type": "string", "minLength": 1},
+        "allow_loopback_http": {"type": "boolean"},
+        "selector": {"type": "string", "minLength": 1},
+        "exact_model_id": {"type": "string", "minLength": 1},
+        "required_mode": {"type": "string", "minLength": 1},
+        "attestation_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "bridge_observation_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+      },
+      "additionalProperties": false
+    },
+    "max_workers": {"type": "integer", "minimum": 1},
+    "enforcement_level": {"enum": ["advisory", "runner_enforced", "harness_enforced"]},
+    "native_worker_tool_control": {"enum": ["absent", "hard_denied", "mediated", "detect_only", "unknown"]},
+    "armed_at": {"type": "string", "format": "date-time"},
+    "guard_binding_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "blocked_at": {"type": "string", "format": "date-time"},
+    "blocked_reason": {"type": "string"},
+    "released_at": {"type": "string", "format": "date-time"},
+    "released_reason": {"type": "string"},
+    "abandoned_at": {"type": "string", "format": "date-time"},
+    "abandoned_reason_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "release_persistence_error": {"type": "boolean"},
+    "fallback_allowed": {"const": false}
+  }
+}

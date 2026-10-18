@@ -1,0 +1,117 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "title": "LocalModelIdentityV1",
+  "required": [
+    "schema",
+    "logical_selector",
+    "artifact_repository",
+    "artifact_revision",
+    "artifact_sha256",
+    "precision",
+    "served_name",
+    "backend",
+    "backend_version",
+    "config_sha256",
+    "template_sha256",
+    "endpoint_identity",
+    "resource_domain",
+    "serving_epoch",
+    "inference_profile_sha256",
+    "evaluation_capability"
+  ],
+  "properties": {
+    "schema": {
+      "const": "LocalModelIdentityV1"
+    },
+    "logical_selector": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$"
+    },
+    "artifact_repository": {
+      "type": "string",
+      "maxLength": 256,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*(?:/[A-Za-z0-9][A-Za-z0-9._:-]*)?$"
+    },
+    "artifact_revision": {
+      "type": "string",
+      "pattern": "^(?:[a-f0-9]{40}|[a-f0-9]{64})$"
+    },
+    "artifact_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "precision": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^(?!(?:[Aa][Uu][Tt][Oo]|[Uu][Nn][Kk][Nn][Oo][Ww][Nn]|[Uu][Nn][Ss][Pp][Ee][Cc][Ii][Ff][Ii][Ee][Dd])$).+$"
+    },
+    "served_name": {
+      "type": "string",
+      "maxLength": 256,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*(?:/[A-Za-z0-9][A-Za-z0-9._:-]*)?$"
+    },
+    "backend": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "backend_version": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "config_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "template_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "endpoint_identity": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "resource_domain": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "serving_epoch": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "inference_profile_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "evaluation_capability": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "artifact_repository": {
+            "const": "AEON-7/Qwen3.8-27B-AEON-ULTIMATE-UNCENSORED-BF16"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "precision": {
+            "const": "BF16"
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "schema": "HostCapabilityManifestV1",
+  "harness": {"name": "AgentFanout standalone hosted runner", "version": "0.2"},
+  "enforcement": {
+    "level": "runner_enforced",
+    "native_worker_tool_control": "absent",
+    "unknown_tool_policy": "deny",
+    "native_worker_tools": [],
+    "anti_bypass_certified": false,
+    "enforcement_contract_declared": true,
+    "scope": "standalone runner process only"
+  },
+  "provider_adapters": [
+    {
+      "provider": "Codex",
+      "adapter_id": "agentfanout.codex.no-tools.bounded-file",
+      "version": "1",
+      "input_modes": ["bounded_file_text"],
+      "availability": "unavailable_real_provider_attestation_not_bundled",
+      "compatibility_gate": "synthetic_probe_diagnostic_only",
+      "session_modes": ["ephemeral"],
+      "usage_proof": "provider_event_required",
+      "cancellation": "process_group_confirmed"
+    },
+    {
+      "provider": "Grok",
+      "adapter_id": "agentfanout.grok.https.no-tools.bounded-file",
+      "version": "2",
+      "input_modes": ["bounded_file_text"],
+      "transport": "fixed_api_x_ai_chat_completions_sse_no_tools_field",
+      "usage_proof": "provider_stream_usage_required",
+      "cancellation": "helper_process_group_confirmed"
+    },
+    {
+      "provider": "Local",
+      "adapter_id": "agentfanout.local.http.no-tools.bounded-file",
+      "version": "1",
+      "input_modes": ["bounded_file_text"],
+      "usage_proof": "exact_endpoint_response_tokens_required",
+      "cancellation": "process_group_confirmed"
+    }
+  ],
+  "issued_at": "2026-07-11T00:00:00Z",
+  "lifetime_policy": "release_bound"
+}

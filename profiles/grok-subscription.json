@@ -1,0 +1,14 @@
+{
+  "schema": "AgentFanoutDistributionProfileV1",
+  "profile": "grok-subscription",
+  "provider": "GrokCLI",
+  "mode": "grok_cli_subscription_acp",
+  "activation": "explicit task-scoped selection",
+  "entrypoint": "scripts/grok-agentfanout.py",
+  "portable": false,
+  "dependencies": ["Python 3.11+", "official Grok CLI"],
+  "requires": ["installed-binary host conformance", "durable host authorization", "explicit spending policy"],
+  "includes": ["agentfanout/", "scripts/", "plugins/grok/"],
+  "failure_policy": "fail closed; no API or native fallback",
+  "admission_default": "disabled"
+}
